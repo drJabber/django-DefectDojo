@@ -73,6 +73,12 @@ then
   echo "JIRA Webhook Secret: ${DD_JIRA_WEBHOOK_SECRET}"
 fi
 
+if [ -z "${DD_OPENPROJECT_WEBHOOK_SECRET}" ]
+then
+  export DD_OPENPROJECT_WEBHOOK_SECRET="$(uuidgen)"
+  echo "OpenProject Webhook Secret: ${DD_OPENPROJECT_WEBHOOK_SECRET}"
+fi
+
 if [ -z "${ADMIN_EXISTS}" ]
 then
 cat <<EOD | python manage.py shell
@@ -93,7 +99,7 @@ EOD
        development_environment benchmark_type benchmark_category benchmark_requirement \
        language_type objects_review regulation initial_surveys role
 
-  echo "UPDATE dojo_system_settings SET jira_webhook_secret='$DD_JIRA_WEBHOOK_SECRET'" | python manage.py dbshell
+  echo "UPDATE dojo_system_settings SET jira_webhook_secret='$DD_JIRA_WEBHOOK_SECRET', openproject_webhook_secret='$DD_OPENPROJECT_WEBHOOK_SECRET'" | python manage.py dbshell
 
   echo "Importing extra fixtures"
   # If there is extra fixtures, load them

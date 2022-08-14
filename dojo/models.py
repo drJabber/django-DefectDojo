@@ -305,6 +305,34 @@ class System_Settings(models.Model):
     jira_labels = models.CharField(max_length=200, blank=True, null=True,
                                    help_text=_('JIRA issue labels space seperated'))
 
+    enable_openproject = models.BooleanField(default=False,
+                                      verbose_name=_('Enable OpenProject integration'),
+                                      blank=False)
+
+    enable_openproject_web_hook = models.BooleanField(default=False,
+                                      verbose_name=_('Enable OpenProject web hook'),
+                                      help_text=_('Please note: It is strongly recommended to use a secret below and / or IP whitelist the OpenProject server using a proxy such as Nginx.'),
+                                      blank=False)
+
+    disable_openproject_webhook_secret = models.BooleanField(default=False,
+                                      verbose_name=_('Disable web hook secret'),
+                                      help_text=_('Allows incoming requests without a secret (discouraged legacy behaviour)'),
+                                      blank=False)
+
+    # will be set to random / uuid by initializer so null needs to be True
+    openproject_webhook_secret = models.CharField(max_length=64, blank=False, null=True, verbose_name=_('OpenProject Webhook URL'),
+                                           help_text=_('Secret needed in URL for incoming OpenProject Webhook'))
+
+    openproject_choices = (('Critical', 'Critical'),
+                    ('High', 'High'),
+                    ('Medium', 'Medium'),
+                    ('Low', 'Low'),
+                    ('Info', 'Info'))
+
+    openproject_minimum_severity = models.CharField(max_length=20, blank=True,
+                                             null=True, choices=openproject_choices,
+                                             default='Low')
+                                             
     enable_github = models.BooleanField(default=False,
                                       verbose_name=_('Enable GITHUB integration'),
                                       blank=False)
