@@ -519,6 +519,13 @@
                                                         </a>
                                                     </li>
                                                 {% endif %}
+                                                {% if system_settings.enable_openproject and "dojo.view_openproject_instance"|has_configuration_permission %}
+                                                    <li>
+                                                        <a href="{% url 'openproject' %}">
+                                                            {% trans "OpenProject" %}
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
                                                 {% if "dojo.change_bannerconf"|has_configuration_permission %}
                                                     <li>
                                                         <a href="{% url 'configure_banner' %}">

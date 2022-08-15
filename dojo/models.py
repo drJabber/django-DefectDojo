@@ -3462,6 +3462,71 @@ class JIRA_Issue(models.Model):
         return text + " | Jira Key: " + str(self.jira_key)
 
 
+class OpenProject_Instance(models.Model):
+    configuration_name = models.CharField(max_length=2000, help_text=_("Enter a name to give to this configuration"), default='')
+    url = models.URLField(max_length=2000, verbose_name=_('OpenProject URL'), help_text=_("For more information how to configure OpenProject, read the DefectDojo documentation."))
+    username = models.CharField(max_length=2000)
+    password = models.CharField(max_length=2000)
+
+    if hasattr(settings, 'OPENPROJECT_ISSUE_TYPE_CHOICES_CONFIG'):
+        default_issue_type_choices = settings.OPENPROJECT_ISSUE_TYPE_CHOICES_CONFIG
+    else:
+        default_issue_type_choices = (
+                                        ('Task', 'Task'),
+                                        ('Milestone', 'Milestone'),
+                                        ('Phase', 'Phase'),
+                                        ('Feature', 'Feature'),
+                                        ('Epic', 'Epic'),
+                                        ('Userstory', 'User story'),
+                                        ('Bug', 'Bug'),
+                                        ('Security', 'Security')
+                                    )
+    default_issue_type = models.CharField(max_length=15,
+                                          choices=default_issue_type_choices,
+                                          default='Bug',
+                                          help_text=_('You can define extra issue types in settings.py'))
+    issue_template_dir = models.CharField(max_length=255,
+                                      null=True,
+                                      blank=True,
+                                      help_text=_("Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default openproject_full templates."))
+    # epic_name_id = models.IntegerField(help_text=_("To obtain the 'Epic name id' visit https://<YOUR JIRA URL>/rest/api/2/field and search for Epic Name. Copy the number out of cf[number] and paste it here."))
+    # open_status_key = models.IntegerField(verbose_name=_('Reopen Transition ID'), help_text=_("Transition ID to Re-Open JIRA issues, visit https://<YOUR JIRA URL>/rest/api/latest/issue/<ANY VALID ISSUE KEY>/transitions?expand=transitions.fields to find the ID for your JIRA instance"))
+    # close_status_key = models.IntegerField(verbose_name=_('Close Transition ID'), help_text=_("Transition ID to Close JIRA issues, visit https://<YOUR JIRA URL>/rest/api/latest/issue/<ANY VALID ISSUE KEY>/transitions?expand=transitions.fields to find the ID for your JIRA instance"))
+    info_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Info"))
+    low_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Low"))
+    medium_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Medium"))
+    high_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: High"))
+    critical_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Critical"))
+    finding_text = models.TextField(null=True, blank=True, help_text=_("Additional text that will be added to the finding in OpenProject. For example including how the finding was created or who to contact for more information."))
+    # accepted_mapping_resolution = models.CharField(null=True, blank=True, max_length=300, help_text=_('JIRA resolution names (comma-separated values) that maps to an Accepted Finding'))
+    # false_positive_mapping_resolution = models.CharField(null=True, blank=True, max_length=300, help_text=_('JIRA resolution names (comma-separated values) that maps to a False Positive Finding'))
+    # global_jira_sla_notification = models.BooleanField(default=True, blank=False, verbose_name=_("Globally send SLA notifications as comment?"), help_text=_("This setting can be overidden at the Product level"))
+
+    # @property
+    # def accepted_resolutions(self):
+    #     return [m.strip() for m in (self.accepted_mapping_resolution or '').split(',')]
+
+    # @property
+    # def false_positive_resolutions(self):
+    #     return [m.strip() for m in (self.false_positive_mapping_resolution or '').split(',')]
+
+    def __str__(self):
+        return self.configuration_name + " | " + self.url + " | " + self.username
+
+    def get_priority(self, status):
+        if status == 'Info':
+            return self.info_mapping_severity
+        elif status == 'Low':
+            return self.low_mapping_severity
+        elif status == 'Normal':
+            return self.medium_mapping_severity
+        elif status == 'High':
+            return self.high_mapping_severity
+        elif status == 'Immediate':
+            return self.critical_mapping_severity
+        else:
+            return 'N/A'
+
 NOTIFICATION_CHOICES = (
     ("slack", "slack"), ("msteams", "msteams"), ("mail", "mail"),
     ("alert", "alert")

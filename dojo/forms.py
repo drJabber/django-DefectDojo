@@ -25,7 +25,7 @@ from dojo.endpoint.utils import endpoint_get_or_create, endpoint_filter, \
 from dojo.models import Finding, Finding_Group, Product_Type, Product, Note_Type, \
     Check_List, SLA_Configuration, User, Engagement, Test, Test_Type, Notes, Risk_Acceptance, \
     Development_Environment, Dojo_User, Endpoint, Stub_Finding, Finding_Template, \
-    JIRA_Issue, JIRA_Project, JIRA_Instance, GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
+    JIRA_Issue, JIRA_Project, JIRA_Instance, OpenProject_Instance, GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
     Tool_Configuration, Tool_Product_Settings, Cred_User, Cred_Mapping, System_Settings, Notifications, \
     App_Analysis, Objects_Product, Benchmark_Product, Benchmark_Requirement, \
     Benchmark_Product_Summary, Rule, Child_Rule, Engagement_Presets, DojoMeta, \
@@ -2191,6 +2191,78 @@ class ExpressJIRAForm(forms.ModelForm):
         return form_data
 
 
+def get_openproject_issue_template_dir_choices():
+    template_root = settings.OPENPROJECT_TEMPLATE_ROOT
+    template_dir_list = [('', '---')]
+    for base_dir, dirnames, filenames in os.walk(template_root):
+        for dirname in dirnames:
+            if base_dir.startswith(settings.TEMPLATE_DIR_PREFIX):
+                base_dir = base_dir[len(settings.TEMPLATE_DIR_PREFIX):]
+            template_dir_list.append((os.path.join(base_dir, dirname), dirname))
+
+    logger.debug('templates: %s', template_dir_list)
+    return template_dir_list
+
+OPENPROJECT_TEMPLATE_CHOICES = sorted(get_openproject_issue_template_dir_choices())
+
+class OpenProjectForm(forms.ModelForm):
+    issue_template_dir = forms.ChoiceField(required=False,
+                                       choices=OPENPROJECT_TEMPLATE_CHOICES,
+                                       help_text='Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default openproject_full templates.')
+
+    password = forms.CharField(widget=forms.PasswordInput, required=True)
+
+    def __init__(self, *args, **kwargs):
+        super(OpenProjectForm, self).__init__(*args, **kwargs)
+        if self.instance:
+            self.fields['password'].required = False
+
+    class Meta:
+        model = OpenProject_Instance
+        exclude = ['']
+
+    def clean(self):
+        import dojo.openproject_link.helper as op_helper
+        form_data = self.cleaned_data
+
+        try:
+            op = op_helper.get_openproject_connection_raw(form_data['url'], form_data['username'], form_data['password'])
+            logger.debug('valid OpenProject config!')
+        except Exception as e:
+            # form only used by admins, so we can show full error message using str(e) which can help debug any problems
+            message = 'Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(e)
+            self.add_error('username', message)
+            self.add_error('password', message)
+
+        return form_data
+
+
+class ExpressOpenProjectForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, required=True)
+    issue_key = forms.CharField(required=True, help_text='A valid issue ID is required to gather the necessary information.')
+
+    class Meta:
+        model = OpenProject_Instance
+        exclude = ['product', 'epic_name_id', 'open_status_key',
+                    'close_status_key', 'info_mapping_severity',
+                    'low_mapping_severity', 'medium_mapping_severity',
+                    'high_mapping_severity', 'critical_mapping_severity', 'finding_text']
+
+    def clean(self):
+        import dojo.openproject_link.helper as op_helper
+        form_data = self.cleaned_data
+
+        try:
+            op = op_helper.get_openproject_connection_raw(form_data['url'], form_data['username'], form_data['password'],)
+            logger.debug('valid OpenProject config!')
+        except Exception as e:
+            # form only used by admins, so we can show full error message using str(e) which can help debug any problems
+            message = 'Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(e)
+            self.add_error('username', message)
+            self.add_error('password', message)
+
+        return form_data
+
 class Benchmark_Product_SummaryForm(forms.ModelForm):
 
     class Meta:
@@ -2246,6 +2318,13 @@ class DeleteJIRAInstanceForm(forms.ModelForm):
         model = JIRA_Instance
         fields = ['id']
 
+class DeleteOpenProjectInstanceForm(forms.ModelForm):
+    id = forms.IntegerField(required=True,
+                            widget=forms.widgets.HiddenInput())
+
+    class Meta:
+        model = OpenProject_Instance
+        fields = ['id']
 
 class ToolTypeForm(forms.ModelForm):
     class Meta:

@@ -197,8 +197,9 @@ env = environ.Env(
     # Allow grouping of findings in the same test, for example to group findings per dependency
     # DD_FEATURE_FINDING_GROUPS feature is moved to system_settings, will be removed from settings file
     DD_FEATURE_FINDING_GROUPS=(bool, True),
-    DD_JIRA_TEMPLATE_ROOT=(str, 'dojo/templates/issue-trackers'),
+    DD_JIRA_TEMPLATE_ROOT=(str, 'dojo/templates/issue-trackers/jira'),
     DD_TEMPLATE_DIR_PREFIX=(str, 'dojo/templates/'),
+    DD_OPENPROJECT_TEMPLATE_ROOT=(str, 'dojo/templates/issue-trackers/openproject'),
 
     # Initial behaviour in Defect Dojo was to delete all duplicates when an original was deleted
     # New behaviour is to leave the duplicates in place, but set the oldest of duplicates as new original
@@ -1315,6 +1316,22 @@ JIRA_ISSUE_TYPE_CHOICES_CONFIG = (
 
 JIRA_SSL_VERIFY = env('DD_JIRA_SSL_VERIFY')
 
+
+# ------------------------------------------------------------------------------
+# OpenProject
+# ------------------------------------------------------------------------------
+# The 'OpenProject' issue type is mandatory, as it is used as the default choice.
+OPENPROJECT_ISSUE_TYPE_CHOICES_CONFIG = (
+                                ('Task', 'Task'),
+                                ('Milestone', 'Milestone'),
+                                ('Phase', 'Phase'),
+                                ('Feature', 'Feature'),
+                                ('Epic', 'Epic'),
+                                ('Userstory', 'User story'),
+                                ('Bug', 'Bug'),
+                                ('Security', 'Security')
+                            )
+
 # ------------------------------------------------------------------------------
 # LOGGING
 # ------------------------------------------------------------------------------
@@ -1461,6 +1478,7 @@ USE_L10N = True
 # FEATURE_FINDING_GROUPS feature is moved to system_settings, will be removed from settings file
 FEATURE_FINDING_GROUPS = env('DD_FEATURE_FINDING_GROUPS')
 JIRA_TEMPLATE_ROOT = env('DD_JIRA_TEMPLATE_ROOT')
+OPENPROJECT_TEMPLATE_ROOT = env('DD_OPENPROJECT_TEMPLATE_ROOT')
 TEMPLATE_DIR_PREFIX = env('DD_TEMPLATE_DIR_PREFIX')
 
 DUPLICATE_CLUSTER_CASCADE_DELETE = env('DD_DUPLICATE_CLUSTER_CASCADE_DELETE')

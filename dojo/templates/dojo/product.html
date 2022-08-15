@@ -58,6 +58,9 @@
                             {% if system_settings.enable_jira %}
                             <th class="text-center">Jira</th>
                             {% endif %}
+                            {% if system_settings.enable_openproject %}
+                            <th class="text-center">OpenProject</th>
+                            {% endif %}
                             {% if system_settings.enable_github %}
                             <th class="text-center">GitHub</th>
                             {% endif %}
@@ -222,6 +225,11 @@
                                     {{ prod|jira_project_tag }}
                                 </td>
                                 {% endif %}
+                                {% if system_settings.enable_openproject %}
+                                <td class="text-center">
+                                    {{ prod|openproject_project_tag }}
+                                </td>
+                                {% endif %}
 
                                 {% if system_settings.enable_github %}
                                 <td class="text-center">
@@ -347,6 +355,11 @@
                     }},
                     {% if system_settings.enable_jira %}
                     { "data": "jira", render: function (data, type, row) {
+                            return type === 'export' ? getDojoExportValueFromTag(data, 'i', 'data-content') :  data;
+                    }},
+                    {% endif %}
+                    {% if system_settings.enable_openproject %}
+                    { "data": "openproject", render: function (data, type, row) {
                             return type === 'export' ? getDojoExportValueFromTag(data, 'i', 'data-content') :  data;
                     }},
                     {% endif %}
