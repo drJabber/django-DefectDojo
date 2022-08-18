@@ -26,6 +26,7 @@ from dojo.models import Language_Type, Languages, Notifications, Product, Produc
     User, Stub_Finding, Finding_Template, Notes, \
     JIRA_Issue, Tool_Product_Settings, Tool_Configuration, Tool_Type, \
     Endpoint, JIRA_Project, JIRA_Instance, DojoMeta, Development_Environment, \
+    OpenProject_Instance, \
     Dojo_User, Note_Type, System_Settings, App_Analysis, Endpoint_Status, \
     Sonarqube_Issue, Sonarqube_Issue_Transition, Regulation, \
     BurpRawRequestResponse, FileUpload, Product_Type_Member, Product_Member, Dojo_Group, \
@@ -1075,6 +1076,20 @@ class JiraProjectViewSet(mixins.ListModelMixin,
 
     def get_queryset(self):
         return get_authorized_jira_projects(Permissions.Product_View)
+
+
+class OpenProjectInstanceViewSet(mixins.ListModelMixin,
+                                mixins.RetrieveModelMixin,
+                                mixins.DestroyModelMixin,
+                                mixins.UpdateModelMixin,
+                                mixins.CreateModelMixin,
+                                viewsets.GenericViewSet,
+                                dojo_mixins.DeletePreviewModelMixin):
+    serializer_class = serializers.OpenProjectInstanceSerializer
+    queryset = OpenProject_Instance.objects.all()
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('id', 'url')
+    permission_classes = (permissions.UserHasConfigurationPermissionSuperuser, )
 
 
 # Authorization: superuser

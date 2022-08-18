@@ -2230,7 +2230,8 @@ class OpenProjectForm(forms.ModelForm):
             logger.debug('valid OpenProject config!')
         except Exception as e:
             # form only used by admins, so we can show full error message using str(e) which can help debug any problems
-            message = 'Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(e)
+            message = 'Unable to authenticate to OpenProject. Please check the url, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(e)
+            self.add_error('url', message)
             self.add_error('username', message)
             self.add_error('password', message)
 
@@ -2258,6 +2259,7 @@ class ExpressOpenProjectForm(forms.ModelForm):
         except Exception as e:
             # form only used by admins, so we can show full error message using str(e) which can help debug any problems
             message = 'Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(e)
+            self.add_error('url', message)
             self.add_error('username', message)
             self.add_error('password', message)
 

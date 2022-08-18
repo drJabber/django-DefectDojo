@@ -13,6 +13,7 @@ from dojo.models import IMPORT_ACTIONS, SEVERITIES, SLA_Configuration, STATS_FIE
     Finding_Template, Test_Type, Development_Environment, NoteHistory, \
     JIRA_Issue, Tool_Product_Settings, Tool_Configuration, Tool_Type, \
     Product_Type, JIRA_Instance, Endpoint, JIRA_Project, \
+    OpenProject_Instance, \
     Notes, DojoMeta, Note_Type, App_Analysis, Endpoint_Status, \
     Sonarqube_Issue, Sonarqube_Issue_Transition, \
     Regulation, System_Settings, FileUpload, SEVERITY_CHOICES, Test_Import, \
@@ -974,6 +975,15 @@ class JIRAProjectSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Either engagement or product has to be set.')
 
         return data
+
+
+class OpenProjectInstanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OpenProject_Instance
+        fields = '__all__'
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
 
 
 class SonarqubeIssueSerializer(serializers.ModelSerializer):

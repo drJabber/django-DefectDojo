@@ -8,6 +8,9 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from django.utils import timezone
+from pyopenproject.openproject import OpenProject
+from pyopenproject.business.exception.business_error import BusinessError
+from pyopenproject.api_connection.exceptions.request_exception import RequestError
 # from jira import JIRA
 # from jira.exceptions import JIRAError
 from dojo.models import Finding, Finding_Group, Risk_Acceptance, Stub_Finding, Test, Engagement, Product, \
@@ -20,6 +23,7 @@ from dojo.decorators import dojo_async_task, dojo_model_from_id, dojo_model_to_i
 from dojo.utils import truncate_with_dots, prod_name, get_file_images
 from django.urls import reverse
 from dojo.forms import JIRAProjectForm, JIRAEngagementForm
+from urllib3.exceptions import NewConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -341,40 +345,47 @@ def is_openproject_enabled():
 
 def get_openproject_connection_raw(openproject_server, openproject_username, openproject_password):
     try:
-        # op = JIRA(server=openproject_server,
-        #         basic_auth=(openproject_username, openproject_password),
-        #         options={"verify": settings.OPENPROJECT_SSL_VERIFY},
-        #         max_retries=0)
+        op = OpenProject(openproject_server, openproject_password, openproject_username)
+        svc = op.get_user_preferences_service()
+        data = svc.find()
 
-        logger.debug('logged in to OpenProject ''%s'' successfully', openproject_server)
+        logger.info('logged in to OpenProject ''%s'' successfully', openproject_server)
 
-        # return op
-        return None
+        return op
     # except OpenProjectError as e:
-    except Exception as e:
+    except BusinessError as e:
         logger.exception(e)
 
-        error_message = e.text if hasattr(e, 'text') else e.message if hasattr(e, 'message') else e.args[0]
+        # error_message = e.text if hasattr(e, 'text') else e.message if hasattr(e, 'message') else e.args[0]
+        error_message = 'Bad credentials'
 
         if e.status_code in [401, 403]:
             log_openproject_generic_alert('OpenProject Authentication Error', error_message)
         else:
             log_openproject_generic_alert('Unknown OpenProject Connection Error', error_message)
 
-        add_error_message_to_response('Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(error_message))
+        add_error_message_to_response('Unable to authenticate to OpenProject. Please check the URL, username, authkey, captcha challenge, Network connection. Details in alert on top right. ' + str(error_message))
         raise e
 
-    except requests.exceptions.RequestException as re:
+    except NewConnectionError as re:
         logger.exception(re)
         error_message = re.text if hasattr(re, 'text') else re.message if hasattr(re, 'message') else re.args[0]
-        log_openproject_generic_alert('Unknown OpenProject Connection Error', re)
+        log_openproject_generic_alert('Unknown OpenProject Connection Error', error_message)
 
-        add_error_message_to_response('Unable to authenticate to OpenProject. Please check the URL, username, password, captcha challenge, Network connection. Details in alert on top right. ' + str(error_message))
+        add_error_message_to_response('Unable to authenticate to OpenProject. Please check the URL, username, authkey, captcha challenge, Network connection. Details in alert on top right. ' + str(error_message))
 
         raise re
 
-    # except RequestException as re:
-    #     logger.exception(re)
+    except SystemExit as se:
+        logger.exception(se)
+
+        error_message = se.text if hasattr(se, 'text') else se.message if hasattr(se, 'message') else se.args[0]
+
+        log_openproject_generic_alert('Unknown OpenProject Connection Error', error_message)
+
+        add_error_message_to_response('Unable to authenticate to OpenProject. Please check the url, username, authkey, captcha challenge, Network connection. Details in alert on top right. ' + str(error_message))
+
+        raise BusinessError("Unknown OpenProject Connection Error") from se
 
 
 # # Gets a connection to a OpenProject server based on the finding

@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from dojo import views
 from dojo.api_v2.views import EndPointViewSet, EngagementViewSet, \
     FindingTemplatesViewSet, FindingViewSet, JiraInstanceViewSet, \
+    OpenProjectInstanceViewSet, \
     JiraIssuesViewSet, JiraProjectViewSet, ProductViewSet, \
     SLAConfigurationViewset, StubFindingsViewSet, TestImportViewSet, TestsViewSet, TestTypesViewSet, \
     ToolConfigurationsViewSet, ToolProductSettingsViewSet, ToolTypesViewSet, \
@@ -82,6 +83,7 @@ v2_api.register(r'jira_instances', JiraInstanceViewSet)
 v2_api.register(r'jira_finding_mappings', JiraIssuesViewSet)
 v2_api.register(r'jira_product_configurations', JiraProjectViewSet)  # backwards compatibility
 v2_api.register(r'jira_projects', JiraProjectViewSet)
+v2_api.register(r'openproject_configurations', OpenProjectInstanceViewSet)  # backwards compatibility
 v2_api.register(r'products', ProductViewSet)
 v2_api.register(r'product_types', ProductTypeViewSet)
 v2_api.register(r'dojo_groups', DojoGroupViewSet)

@@ -3527,6 +3527,34 @@ class OpenProject_Instance(models.Model):
         else:
             return 'N/A'
 
+# declare form here as we can't import forms.py due to circular imports not even locally
+class OpenProjectForm_Admin(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, required=True)
+
+    # django doesn't seem to have an easy way to handle password fields as PasswordInput requires reentry of passwords
+    password_from_db = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance:
+            # keep password from db to use if the user entered no password
+            self.password_from_db = self.instance.password
+            self.fields['password'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data['password']:
+            cleaned_data['password'] = self.password_from_db
+
+        return cleaned_data
+
+class OpenProject_Instance_Admin(admin.ModelAdmin):
+    form = OpenProjectForm_Admin
+
+class OpenProject_Conf_Admin(admin.ModelAdmin):
+    form = OpenProjectForm_Admin
+
+
 NOTIFICATION_CHOICES = (
     ("slack", "slack"), ("msteams", "msteams"), ("mail", "mail"),
     ("alert", "alert")
@@ -3543,6 +3571,7 @@ class Notifications(models.Model):
 
     scan_added = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True, help_text=_('Triggered whenever an (re-)import has been done that created/updated/closed findings.'))
     jira_update = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True, verbose_name=_("JIRA problems"), help_text=_("JIRA sync happens in the background, errors will be shown as notifications/alerts so make sure to subscribe"))
+    openproject_update = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True, verbose_name=_("OpenProject problems"), help_text=_("OpenProject sync happens in the background, errors will be shown as notifications/alerts so make sure to subscribe"))
     upcoming_engagement = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True)
     stale_engagement = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True)
     auto_close_engagement = MultiSelectField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION, blank=True)
@@ -3590,6 +3619,7 @@ class Notifications(models.Model):
                 result.test_added = merge_sets_safe(result.test_added, notifications.test_added)
                 result.scan_added = merge_sets_safe(result.scan_added, notifications.scan_added)
                 result.jira_update = merge_sets_safe(result.jira_update, notifications.jira_update)
+                result.openprojet_update = merge_sets_safe(result.openproject_update, notifications.openproject_update)
                 result.upcoming_engagement = merge_sets_safe(result.upcoming_engagement, notifications.upcoming_engagement)
                 result.stale_engagement = merge_sets_safe(result.stale_engagement, notifications.stale_engagement)
                 result.auto_close_engagement = merge_sets_safe(result.auto_close_engagement, notifications.auto_close_engagement)
@@ -4200,6 +4230,7 @@ admin.site.register(Alerts)
 admin.site.register(JIRA_Issue)
 admin.site.register(JIRA_Instance, JIRA_Instance_Admin)
 admin.site.register(JIRA_Project)
+admin.site.register(OpenProject_Instance, OpenProject_Instance_Admin)
 admin.site.register(GITHUB_Conf)
 admin.site.register(GITHUB_PKey)
 admin.site.register(Tool_Configuration, Tool_Configuration_Admin)
