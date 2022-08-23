@@ -1036,6 +1036,11 @@ class Product(models.Model):
         import dojo.jira_link.helper as jira_helper
         return jira_helper.has_jira_configured(self)
 
+    @property
+    def has_openproject_configured(self):
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_configured(self)
+
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('view_product', args=[str(self.id)])
@@ -1321,6 +1326,11 @@ class Engagement(models.Model):
     def has_jira_issue(self):
         import dojo.jira_link.helper as jira_helper
         return jira_helper.has_jira_issue(self)
+
+    @property
+    def has_openproject_issue(self):
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_issue(self)
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -2640,6 +2650,11 @@ class Finding(models.Model):
         import dojo.jira_link.helper as jira_helper
         return jira_helper.has_jira_issue(self)
 
+    @property
+    def has_openproject_issue(self):
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_issue(self)
+
     @cached_property
     def finding_group(self):
         group = self.finding_group_set.all().first()
@@ -2660,15 +2675,28 @@ class Finding(models.Model):
         return jira_helper.has_jira_configured(self)
 
     @cached_property
+    def has_openproject_group_issue(self):
+        if not self.has_finding_group:
+            return False
+
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_issue(self.finding_group)
+
+    @property
+    def has_openproject_configured(self):
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_configured(self)
+
+    @cached_property
     def has_finding_group(self):
         return self.finding_group is not None
 
     def save_no_options(self, *args, **kwargs):
         return self.save(dedupe_option=False, false_history=False, rules_option=False, product_grading_option=False,
-             issue_updater_option=False, push_to_jira=False, user=None, *args, **kwargs)
+             issue_updater_option=False, push_to_jira=False, push_to_openproject=False, user=None, *args, **kwargs)
 
     def save(self, dedupe_option=True, false_history=False, rules_option=True, product_grading_option=True,
-             issue_updater_option=True, push_to_jira=False, user=None, *args, **kwargs):
+             issue_updater_option=True, push_to_jira=False, push_to_openproject=False, user=None, *args, **kwargs):
 
         from dojo.finding import helper as finding_helper
 
@@ -2736,9 +2764,9 @@ class Finding(models.Model):
         self.found_by.add(self.test.test_type)
 
         # only perform post processing (in celery task) if needed. this check avoids submitting 1000s of tasks to celery that will do nothing
-        if dedupe_option or false_history or issue_updater_option or product_grading_option or push_to_jira:
+        if dedupe_option or false_history or issue_updater_option or product_grading_option or push_to_jira or push_to_openproject:
             finding_helper.post_process_finding_save(self, dedupe_option=dedupe_option, false_history=false_history, rules_option=rules_option, product_grading_option=product_grading_option,
-                issue_updater_option=issue_updater_option, push_to_jira=push_to_jira, user=user, *args, **kwargs)
+                issue_updater_option=issue_updater_option, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, user=user, *args, **kwargs)
         else:
             logger.debug('no options selected that require finding post processing')
 
@@ -2915,6 +2943,11 @@ class Finding_Group(TimeStampedModel):
     def has_jira_issue(self):
         import dojo.jira_link.helper as jira_helper
         return jira_helper.has_jira_issue(self)
+
+    @property
+    def has_openproject_issue(self):
+        import dojo.openproject_link.helper as openproject_helper
+        return openproject_helper.has_openproject_issue(self)
 
     @cached_property
     def severity(self):
@@ -3489,26 +3522,43 @@ class OpenProject_Instance(models.Model):
                                       null=True,
                                       blank=True,
                                       help_text=_("Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default openproject_full templates."))
-    # epic_name_id = models.IntegerField(help_text=_("To obtain the 'Epic name id' visit https://<YOUR JIRA URL>/rest/api/2/field and search for Epic Name. Copy the number out of cf[number] and paste it here."))
-    # open_status_key = models.IntegerField(verbose_name=_('Reopen Transition ID'), help_text=_("Transition ID to Re-Open JIRA issues, visit https://<YOUR JIRA URL>/rest/api/latest/issue/<ANY VALID ISSUE KEY>/transitions?expand=transitions.fields to find the ID for your JIRA instance"))
-    # close_status_key = models.IntegerField(verbose_name=_('Close Transition ID'), help_text=_("Transition ID to Close JIRA issues, visit https://<YOUR JIRA URL>/rest/api/latest/issue/<ANY VALID ISSUE KEY>/transitions?expand=transitions.fields to find the ID for your JIRA instance"))
+
+    epic_name_id = models.IntegerField(help_text=_("To obtain the 'Epic name id' visit https://<YOUR OPENPROJECT URL>/api/v3/types and search for Epic Name. Copy the number out of type[\"id\"] and paste it here."),
+                                       null=True,
+                                       blank=True)
+    open_status_key = models.IntegerField(verbose_name=_('Reopen Transition ID'), 
+                                          help_text=_("Transition ID to Re-Open OpenProject issues, visit https://<YOUR OpenProject URL>/api/v3/statuses to find the ID for your OpenProject open status"),
+                                          null=True,
+                                          blank=True)
+    close_status_key = models.IntegerField(verbose_name=_('Close Transition ID'), 
+                                           help_text=_("Transition ID to Close OpenProject issues, visit https://<YOUR OpenProject URL>/api/v3/statuses to find the ID for your OpenProject closed status"),
+                                           null=True,
+                                           blank=True)
     info_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Info"))
     low_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Low"))
     medium_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Medium"))
     high_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: High"))
     critical_mapping_severity = models.CharField(max_length=200, help_text=_("Maps to the 'Priority' field in OpenProject. For example: Critical"))
     finding_text = models.TextField(null=True, blank=True, help_text=_("Additional text that will be added to the finding in OpenProject. For example including how the finding was created or who to contact for more information."))
-    # accepted_mapping_resolution = models.CharField(null=True, blank=True, max_length=300, help_text=_('JIRA resolution names (comma-separated values) that maps to an Accepted Finding'))
-    # false_positive_mapping_resolution = models.CharField(null=True, blank=True, max_length=300, help_text=_('JIRA resolution names (comma-separated values) that maps to a False Positive Finding'))
-    # global_jira_sla_notification = models.BooleanField(default=True, blank=False, verbose_name=_("Globally send SLA notifications as comment?"), help_text=_("This setting can be overidden at the Product level"))
+    accepted_mapping_resolution = models.CharField(null=True, 
+                                                   blank=True, 
+                                                   max_length=300, 
+                                                   default='accepted,submitted,confirmed',
+                                                   help_text=_('OpenProject resolution names (comma-separated values) that maps to an Accepted Finding, e.g. "accepted,prioritized,submitted,confirmed"'))
+    false_positive_mapping_resolution = models.CharField(null=True, 
+                                                         blank=True, 
+                                                         max_length=300, 
+                                                         default='unconfirmed, rejected',
+                                                         help_text=_('OpenProject resolution names (comma-separated values) that maps to a False Positive Finding, e.g. "unconfirmed,rejected"'))
+    global_openproject_sla_notification = models.BooleanField(default=True, blank=False, verbose_name=_("Globally send SLA notifications as comment?"), help_text=_("This setting can be overidden at the Product level"))
 
-    # @property
-    # def accepted_resolutions(self):
-    #     return [m.strip() for m in (self.accepted_mapping_resolution or '').split(',')]
+    @property
+    def accepted_resolutions(self):
+        return [m.strip() for m in (self.accepted_mapping_resolution or '').split(',')]
 
-    # @property
-    # def false_positive_resolutions(self):
-    #     return [m.strip() for m in (self.false_positive_mapping_resolution or '').split(',')]
+    @property
+    def false_positive_resolutions(self):
+        return [m.strip() for m in (self.false_positive_mapping_resolution or '').split(',')]
 
     def __str__(self):
         return self.configuration_name + " | " + self.url + " | " + self.username
@@ -3548,11 +3598,72 @@ class OpenProjectForm_Admin(forms.ModelForm):
 
         return cleaned_data
 
+
 class OpenProject_Instance_Admin(admin.ModelAdmin):
     form = OpenProjectForm_Admin
 
+class OpenProject_Project(models.Model):
+    openproject_instance = models.ForeignKey(OpenProject_Instance, verbose_name=_('OpenProject Instance'),
+                             null=True, blank=True, on_delete=models.PROTECT)
+    project_key = models.CharField(max_length=200, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    issue_template_dir = models.CharField(max_length=255,
+                                      null=True,
+                                      blank=True,
+                                      help_text=_("Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default openproject_full templates."))
+    engagement = models.OneToOneField(Engagement, on_delete=models.CASCADE, null=True, blank=True)
+    push_all_issues = models.BooleanField(default=False, blank=True,
+         help_text=_("Automatically maintain parity with OpenProject. Always create and update OpenProject tickets for findings in this Product."))
+    enable_engagement_epic_mapping = models.BooleanField(default=False,
+                                                         blank=True)
+    push_notes = models.BooleanField(default=False, blank=True)
+    product_openproject_sla_notification = models.BooleanField(default=False, blank=True, verbose_name=_("Send SLA notifications as comment?"))
+    risk_acceptance_expiration_notification = models.BooleanField(default=False, blank=True, verbose_name=_("Send Risk Acceptance expiration notifications as comment?"))
+
+    def clean(self):
+        if not self.openproject_instance:
+            raise ValidationError('Cannot save OpenProject Project Configuration without OpenProject Instance')
+
+    def __str__(self):
+        return ('%s: ' + self.project_key + '(%s)') % (str(self.id), str(self.openproject_instance.url) if self.openproject_instance else 'None')
+
 class OpenProject_Conf_Admin(admin.ModelAdmin):
     form = OpenProjectForm_Admin
+
+
+class OpenProject_Issue(models.Model):
+    openproject_project = models.ForeignKey(OpenProject_Project, on_delete=models.CASCADE, null=True)
+    openproject_id = models.CharField(max_length=200)
+    finding = models.OneToOneField(Finding, null=True, blank=True, on_delete=models.CASCADE)
+    engagement = models.OneToOneField(Engagement, null=True, blank=True, on_delete=models.CASCADE)
+    finding_group = models.OneToOneField(Finding_Group, null=True, blank=True, on_delete=models.CASCADE)
+
+    openproject_creation = models.DateTimeField(editable=True,
+                                         null=True,
+                                         verbose_name=_('OpenProject creation'),
+                                         help_text=_("The date a OpenProject issue was created from this finding."))
+    openproject_change = models.DateTimeField(editable=True,
+                                       null=True,
+                                       verbose_name=_('OpenProject last update'),
+                                       help_text=_("The date the linked OpenProject issue was last modified."))
+
+    def set_obj(self, obj):
+        if type(obj) == Finding:
+            self.finding = obj
+        elif type(obj) == Finding_Group:
+            self.finding_group = obj
+        elif type(obj) == Engagement:
+            self.engagement = obj
+        else:
+            raise ValueError('unknown object type while creating OpenProject_Issue: %s' % to_str_typed(obj))
+
+    def __str__(self):
+        text = ""
+        if self.finding:
+            text = self.finding.test.engagement.product.name + " | Finding: " + self.finding.title + ", ID: " + str(self.finding.id)
+        elif self.engagement:
+            text = self.engagement.product.name + " | Engagement: " + self.engagement.name + ", ID: " + str(self.engagement.id)
+        return text + " | OpenProject id: " + str(self.openproject_id)
 
 
 NOTIFICATION_CHOICES = (
@@ -4230,7 +4341,9 @@ admin.site.register(Alerts)
 admin.site.register(JIRA_Issue)
 admin.site.register(JIRA_Instance, JIRA_Instance_Admin)
 admin.site.register(JIRA_Project)
+admin.site.register(OpenProject_Issue)
 admin.site.register(OpenProject_Instance, OpenProject_Instance_Admin)
+admin.site.register(OpenProject_Project)
 admin.site.register(GITHUB_Conf)
 admin.site.register(GITHUB_PKey)
 admin.site.register(Tool_Configuration, Tool_Configuration_Admin)

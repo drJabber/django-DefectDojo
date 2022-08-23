@@ -52,6 +52,12 @@ class Migration(migrations.Migration):
                 ('high_mapping_severity', models.CharField(help_text="Maps to the 'Priority' field in OpenProject. For example: High", max_length=200)),
                 ('critical_mapping_severity', models.CharField(help_text="Maps to the 'Priority' field in OpenProject. For example: Critical", max_length=200)),
                 ('finding_text', models.TextField(blank=True, help_text='Additional text that will be added to the finding in OpenProject. For example including how the finding was created or who to contact for more information.', null=True)),
+                ('close_status_key',models.IntegerField(blank=True, help_text='Transition ID to Close OpenProject issues, visit https://<YOUR OpenProject URL>/api/v3/statuses to find the ID for your OpenProject closed status', null=True, verbose_name='Close Transition ID')),
+                ('open_status_key',models.IntegerField(blank=True, help_text='Transition ID to Re-Open OpenProject issues, visit https://<YOUR OpenProject URL>/api/v3/statuses to find the ID for your OpenProject open status', null=True, verbose_name='Reopen Transition ID')),
+                ('epic_name_id',models.IntegerField(blank=True, help_text='To obtain the \'Epic name id\' visit https://<YOUR OPENPROJECT URL>/api/v3/types and search for Epic Name. Copy the number out of type["id"] and paste it here.', null=True)),
+                ('accepted_mapping_resolution',models.CharField(blank=True, default='accepted,submitted,confirmed', help_text='OpenProject resolution names (comma-separated values) that maps to an Accepted Finding, e.g. "accepted,prioritized,submitted,confirmed"', max_length=300, null=True)),
+                ('false_positive_mapping_resolution',models.CharField(blank=True, default='unconfirmed, rejected', help_text='OpenProject resolution names (comma-separated values) that maps to a False Positive Finding, e.g. "unconfirmed,rejected"', max_length=300, null=True)),
+                ('global_openproject_sla_notification',models.BooleanField(default=True, help_text='This setting can be overidden at the Product level', verbose_name='Globally send SLA notifications as comment?')),
             ],
         ),
         migrations.AddField(
@@ -59,4 +65,34 @@ class Migration(migrations.Migration):
             name='openproject_update',
             field=multiselectfield.db.fields.MultiSelectField(blank=True, choices=[('slack', 'slack'), ('msteams', 'msteams'), ('mail', 'mail'), ('alert', 'alert')], default=('alert', 'alert'), help_text='OpenProject sync happens in the background, errors will be shown as notifications/alerts so make sure to subscribe', max_length=24, verbose_name='OpenProject problems'),
         ),
+        migrations.CreateModel(
+            name='OpenProject_Project',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('project_key', models.CharField(blank=True, max_length=200)),
+                ('issue_template_dir', models.CharField(blank=True, help_text='Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default openproject_full templates.', max_length=255, null=True)),
+                ('push_all_issues', models.BooleanField(blank=True, default=False, help_text='Automatically maintain parity with OpenProject. Always create and update OpenProject tickets for findings in this Product.')),
+                ('enable_engagement_epic_mapping', models.BooleanField(blank=True, default=False)),
+                ('push_notes', models.BooleanField(blank=True, default=False)),
+                ('product_openproject_sla_notification', models.BooleanField(blank=True, default=False, verbose_name='Send SLA notifications as comment?')),
+                ('risk_acceptance_expiration_notification', models.BooleanField(blank=True, default=False, verbose_name='Send Risk Acceptance expiration notifications as comment?')),
+                ('engagement', models.OneToOneField(blank=True, null=True, on_delete=models.deletion.CASCADE, to='dojo.engagement')),
+                ('openproject_instance', models.ForeignKey(blank=True, null=True, on_delete=models.deletion.PROTECT, to='dojo.openproject_instance', verbose_name='OpenProject Instance')),
+                ('product', models.ForeignKey(null=True, on_delete=models.deletion.CASCADE, to='dojo.product')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='OpenProject_Issue',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('openproject_id', models.CharField(max_length=200)),
+                ('openproject_creation', models.DateTimeField(help_text='The date a OpenProject issue was created from this finding.', null=True, verbose_name='OpenProject creation')),
+                ('openproject_change', models.DateTimeField(help_text='The date the linked OpenProject issue was last modified.', null=True, verbose_name='OpenProject last update')),
+                ('engagement', models.OneToOneField(blank=True, null=True, on_delete=models.deletion.CASCADE, to='dojo.engagement')),
+                ('finding', models.OneToOneField(blank=True, null=True, on_delete=models.deletion.CASCADE, to='dojo.finding')),
+                ('finding_group', models.OneToOneField(blank=True, null=True, on_delete=models.deletion.CASCADE, to='dojo.finding_group')),
+                ('openproject_project', models.ForeignKey(null=True, on_delete=models.deletion.CASCADE, to='dojo.openproject_project')),
+            ],
+        ),
+
      ]

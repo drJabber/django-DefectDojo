@@ -19,6 +19,7 @@ import bleach
 import git
 from django.conf import settings
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import logging
 
 logger = logging.getLogger(__name__)
@@ -838,6 +839,36 @@ def jira_change(obj):
 
 
 @register.filter
+def openproject_project(obj, use_inheritance=True):
+    return openproject_helper.get_openproject_project(obj, use_inheritance)
+
+
+@register.filter
+def openproject_issue_url(obj):
+    return openproject_helper.get_openproject_url(obj)
+
+
+@register.filter
+def openproject_project_url(obj):
+    return openproject_helper.get_openproject_project_url(obj)
+
+
+@register.filter
+def openproject_key(obj):
+    return openproject_helper.get_openproject_key(obj)
+
+
+@register.filter
+def openproject_creation(obj):
+    return openproject_helper.get_openproject_creation(obj)
+
+
+@register.filter
+def openproject_change(obj):
+    return openproject_helper.get_openproject_change(obj)
+
+
+@register.filter
 def get_thumbnail(file):
     from pathlib import Path
     file_format = Path(file.file.url).suffix[1:]
@@ -931,6 +962,50 @@ def jira_project_tag(product_or_engagement, autoescape=True):
                                 esc(jira_project.enable_engagement_epic_mapping),
                                 esc(jira_project.push_notes)))
 
+@register.filter(needs_autoescape=True)
+def openproject_project_tag(product_or_engagement, autoescape=True):
+    if autoescape:
+        esc = conditional_escape
+    else:
+        esc = lambda x: x
+
+    openproject_project = openproject_helper.get_openproject_project(product_or_engagement)
+
+    if not openproject_project:
+        return ''
+
+    html = """
+    <i class="fa %s has-popover %s"
+        title="<i class='fa %s'></i> <b>Openproject Project Configuration%s</b>" data-trigger="hover" data-container="body" data-html="true" data-placement="bottom"
+        data-content="<b>Jira:</b> %s<br/>
+        <b>Project Key:</b> %s<br/>
+        <b>Push All Issues:</b> %s<br/>
+        <b>Engagement Epic Mapping:</b> %s<br/>
+        <b>Push Notes:</b> %s">
+    </i>
+    """
+    op_project_no_inheritance = openproject_helper.get_openproject_project(product_or_engagement, use_inheritance=False)
+    inherited = True if not op_project_no_inheritance else False
+
+    icon = 'fa-bug'
+    color = ''
+    inherited_text = ''
+
+    if inherited:
+        color = 'lightgrey'
+        inherited_text = ' (inherited)'
+
+    if not openproject_project.openproject_instance:
+        color = 'red'
+        icon = 'fa-exclamation-triangle'
+
+    return mark_safe(html % (icon, color, icon, inherited_text,  # indicator if opentproject_instance is missing
+                                esc(openproject_project.openproject_instance),
+                                esc(openproject_project.project_key),
+                                esc(openproject_project.push_all_issues),
+                                esc(openproject_project.enable_engagement_epic_mapping),
+                                esc(openproject_project.push_notes)))
+
 
 @register.filter
 def full_name(user):
@@ -960,6 +1035,7 @@ def import_settings_tag(test_import, autoescape=True):
             <b>Minimum Severity:</b> %s<br/>
             <b>Close Old Findings:</b> %s<br/>
             <b>Push to jira:</b> %s<br/>
+            <b>Push to OpenProject:</b> %s<br/>
             <b>Tags:</b> %s<br/>
             <b>Endpoints:</b> %s<br/>
         "
@@ -976,6 +1052,7 @@ def import_settings_tag(test_import, autoescape=True):
                                 esc(test_import.import_settings.get('minimum_severity', None)),
                                 esc(test_import.import_settings.get('close_old_findings', None)),
                                 esc(test_import.import_settings.get('push_to_jira', None)),
+                                esc(test_import.import_settings.get('push_to_openproject', None)),
                                 esc(test_import.import_settings.get('tags', None)),
                                 esc(test_import.import_settings.get('endpoints', test_import.import_settings.get('endpoint', None)))))
 

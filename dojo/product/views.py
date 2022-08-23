@@ -31,7 +31,9 @@ from dojo.forms import ProductForm, EngForm, DeleteProductForm, DojoMetaDataForm
     GITHUB_Product_Form, GITHUBFindingForm, AppAnalysisForm, JIRAEngagementForm, Add_Product_MemberForm, \
     Edit_Product_MemberForm, Delete_Product_MemberForm, Add_Product_GroupForm, Edit_Product_Group_Form, \
     Delete_Product_GroupForm, SLA_Configuration, \
-    DeleteAppAnalysisForm, Product_API_Scan_ConfigurationForm, DeleteProduct_API_Scan_ConfigurationForm
+    DeleteAppAnalysisForm, Product_API_Scan_ConfigurationForm, DeleteProduct_API_Scan_ConfigurationForm, \
+    OpenProjectProjectForm, OpenProjectEngagementForm
+
 from dojo.models import Product_Type, Note_Type, Finding, Product, Engagement, Test, GITHUB_PKey, \
     Test_Type, System_Settings, Languages, App_Analysis, Benchmark_Type, Benchmark_Product_Summary, Endpoint_Status, \
     Endpoint, Engagement_Presets, DojoMeta, Notifications, BurpRawRequestResponse, Product_Member, \
@@ -54,6 +56,7 @@ from dojo.tool_config.factory import create_API
 
 import dojo.finding.helper as finding_helper
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +117,7 @@ def prefetch_for_product(prods):
                                                     engagement__test__finding__active=True,
                                                     engagement__test__finding__verified=True)))
         prefetched_prods = prefetched_prods.prefetch_related('jira_project_set__jira_instance')
+        prefetched_prods = prefetched_prods.prefetch_related('openproject_project_set__openproject_instance')
         prefetched_prods = prefetched_prods.prefetch_related('members')
         prefetched_prods = prefetched_prods.prefetch_related('prod_type__members')
         active_endpoint_query = Endpoint.objects.filter(
@@ -712,6 +716,12 @@ def prefetch_for_view_engagements(engagements, recent_test_day_count):
             'product__jira_project_set__jira_instance',
         )
 
+    if System_Settings.objects.get().enable_openproject:
+        engagements = engagements.prefetch_related(
+            'openproject_project__openproject_instance',
+            'product__openproject_project_set__openproject_instance',
+        )
+
     return engagements
 
 
@@ -726,6 +736,7 @@ def new_product(request, ptid=None):
         raise PermissionDenied()
 
     jira_project_form = None
+    openproject_project_form = None
     error = False
     initial = None
     if ptid is not None:
@@ -753,6 +764,9 @@ def new_product(request, ptid=None):
                                  extra_tags='alert-success')
             success, jira_project_form = jira_helper.process_jira_project_form(request, product=product)
             error = not success
+
+            success, openproject_project_form = openproject_helper.process_openproject_project_form(request, product=product)
+            error = error or not success
 
             if get_system_setting('enable_github'):
                 if gform.is_valid():
@@ -793,11 +807,14 @@ def new_product(request, ptid=None):
             if not error:
                 return HttpResponseRedirect(reverse('view_product', args=(product.id,)))
             else:
-                # engagement was saved, but JIRA errors, so goto edit_product
+                # engagement was saved, but JIRA or OpenProject errors, so goto edit_product
                 return HttpResponseRedirect(reverse('edit_product', args=(product.id,)))
     else:
         if get_system_setting('enable_jira'):
             jira_project_form = JIRAProjectForm()
+
+        if get_system_setting('enable_openproject'):
+            openproject_project_form = OpenProjectProjectForm()
 
         if get_system_setting('enable_github'):
             gform = GITHUB_Product_Form()
@@ -808,6 +825,7 @@ def new_product(request, ptid=None):
     return render(request, 'dojo/new_product.html',
                   {'form': form,
                    'jform': jira_project_form,
+                   'opform': openproject_project_form,
                    'gform': gform})
 
 
@@ -818,6 +836,9 @@ def edit_product(request, pid):
     jira_enabled = system_settings.enable_jira
     jira_project = None
     jform = None
+    openproject_enabled = system_settings.enable_openproject
+    openproject_project = None
+    opform = None
     github_enabled = system_settings.enable_github
     github_inst = None
     gform = None
@@ -832,6 +853,7 @@ def edit_product(request, pid):
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         jira_project = jira_helper.get_jira_project(product)
+        openproject_project = openproject_helper.get_openproject_project(product)
         if form.is_valid():
             form.save()
             tags = request.POST.getlist('tags')
@@ -842,6 +864,9 @@ def edit_product(request, pid):
 
             success, jform = jira_helper.process_jira_project_form(request, instance=jira_project, product=product)
             error = not success
+
+            success, opform = openproject_helper.process_openproject_project_form(request, instance=openproject_project, product=product)
+            error = error or not success
 
             if get_system_setting('enable_github') and github_inst:
                 gform = GITHUB_Product_Form(request.POST, instance=github_inst)
@@ -872,6 +897,12 @@ def edit_product(request, pid):
         else:
             jform = None
 
+        if openproject_enabled:
+            openproject_project = openproject_helper.get_openproject_project(product)
+            opform = OpenProjectProjectForm(instance=openproject_project)
+        else:
+            opform = None
+
         if github_enabled and (github_inst is not None):
             if github_inst is not None:
                 gform = GITHUB_Product_Form(instance=github_inst)
@@ -886,6 +917,7 @@ def edit_product(request, pid):
                   {'form': form,
                    'product_tab': product_tab,
                    'jform': jform,
+                   'opform': opform,
                    'gform': gform,
                    'product': product
                    })
@@ -952,12 +984,19 @@ def new_eng_for_app(request, pid, cicd=False):
     jira_project_form = None
     jira_epic_form = None
 
+    openproject_project = None
+    openproject_project_form = None
+    openproject_epic_form = None
+
     product = Product.objects.get(id=pid)
     jira_error = False
+    openproject_error = False
 
     if request.method == 'POST':
         form = EngForm(request.POST, cicd=cicd, product=product, user=request.user)
         jira_project = jira_helper.get_jira_project(product)
+        openproject_project = openproject_helper.get_openproject_project(product)
+
         logger.debug('new_eng_for_app')
 
         if form.is_valid():
@@ -980,16 +1019,24 @@ def new_eng_for_app(request, pid, cicd=False):
             engagement.save()
             form.save_m2m()
 
-            logger.debug('new_eng_for_app: process jira coming')
+            logger.debug('new_eng_for_app: process jira/openproject coming')
 
             # new engagement, so do not provide jira_project
             success, jira_project_form = jira_helper.process_jira_project_form(request, instance=None,
                                                                                engagement=engagement)
             error = not success
 
-            logger.debug('new_eng_for_app: process jira epic coming')
+            # new engagement, so do not provide openproject_project
+            success, openproject_project_form = openproject_helper.process_openproject_project_form(request, instance=None,
+                                                                               engagement=engagement)
+            error = error or not success
+
+            logger.debug('new_eng_for_app: process jira/openproject epic coming')
 
             success, jira_epic_form = jira_helper.process_jira_epic_form(request, engagement=engagement)
+            error = error or not success
+
+            success, openproject_epic_form = openproject_helper.process_openproject_epic_form(request, engagement=engagement)
             error = error or not success
 
             messages.add_message(request,
@@ -1006,7 +1053,7 @@ def new_eng_for_app(request, pid, cicd=False):
                     return HttpResponseRedirect(reverse('view_engagement', args=(engagement.id,)))
             else:
                 # engagement was saved, but JIRA errors, so goto edit_engagement
-                logger.debug('new_eng_for_app: jira errors')
+                logger.debug('new_eng_for_app: jira/openproject errors')
                 return HttpResponseRedirect(reverse('edit_engagement', args=(engagement.id,)))
         else:
             logger.debug(form.errors)
@@ -1022,6 +1069,13 @@ def new_eng_for_app(request, pid, cicd=False):
             logger.debug('showing jira-epic-form')
             jira_epic_form = JIRAEngagementForm()
 
+        if get_system_setting('enable_openproject'):
+            openproject_project = openproject_helper.get_openproject_project(product)
+            logger.debug('showing openproject-project-form')
+            openproject_project_form = OpenProjectProjectForm(target='engagement', product=product)
+            logger.debug('showing openproject-epic-form')
+            openproject_epic_form = OpenProjectEngagementForm()
+
     if cicd:
         title = _('New CI/CD Engagement')
     else:
@@ -1033,7 +1087,10 @@ def new_eng_for_app(request, pid, cicd=False):
         'title': title,
         'product_tab': product_tab,
         'jira_epic_form': jira_epic_form,
-        'jira_project_form': jira_project_form})
+        'jira_project_form': jira_project_form,
+        'op_epic_form': openproject_epic_form,
+        'op_project_form': openproject_project_form,
+        })
 
 
 @user_is_authorized(Product, Permissions.Technology_Add, 'pid')

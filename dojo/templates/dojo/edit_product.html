@@ -26,7 +26,12 @@
                 <h4> JIRA </h4>
                 <hr>
                 {% include "dojo/form_fields.html" with form=jform %}
-            {% endif %}
+        {% endif %}
+        {%  if opform %}
+                <h4> OpenProject </h4>
+                <hr>
+                {% include "dojo/form_fields.html" with form=opform %}
+        {% endif %}
         {%  if gform %}
             <h4> Github </h4>
             <hr>

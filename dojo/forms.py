@@ -26,6 +26,7 @@ from dojo.models import Finding, Finding_Group, Product_Type, Product, Note_Type
     Check_List, SLA_Configuration, User, Engagement, Test, Test_Type, Notes, Risk_Acceptance, \
     Development_Environment, Dojo_User, Endpoint, Stub_Finding, Finding_Template, \
     JIRA_Issue, JIRA_Project, JIRA_Instance, OpenProject_Instance, GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
+    OpenProject_Project, \
     Tool_Configuration, Tool_Product_Settings, Cred_User, Cred_Mapping, System_Settings, Notifications, \
     App_Analysis, Objects_Product, Benchmark_Product, Benchmark_Requirement, \
     Benchmark_Product_Summary, Rule, Child_Rule, Engagement_Presets, DojoMeta, \
@@ -2240,7 +2241,6 @@ class OpenProjectForm(forms.ModelForm):
 
 class ExpressOpenProjectForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, required=True)
-    issue_key = forms.CharField(required=True, help_text='A valid issue ID is required to gather the necessary information.')
 
     class Meta:
         model = OpenProject_Instance
@@ -2716,6 +2716,115 @@ class JIRAProjectForm(forms.ModelForm):
                 raise ValidationError('JIRA Project needs a JIRA Instance and JIRA Project Key, leave empty to have no JIRA integration setup')
 
 
+class OpenProjectProjectForm(forms.ModelForm):
+    inherit_from_product = forms.BooleanField(label='inherit OpenProject settings from product', required=False)
+    openproject_instance = forms.ModelChoiceField(queryset=OpenProject_Instance.objects.all(), label='OpenProject Instance', required=False)
+    issue_template_dir = forms.ChoiceField(required=False,
+                                       choices=OPENPROJECT_TEMPLATE_CHOICES,
+                                       help_text='Choose the folder containing the Django templates used to render the OpenProject issue description. These are stored in dojo/templates/issue-trackers. Leave empty to use the default _full templates.')
+
+    prefix = 'openproject-project-form'
+
+    class Meta:
+        model = OpenProject_Project
+        exclude = ['product', 'engagement']
+        fields = ['inherit_from_product', 'openproject_instance', 'project_key', 'issue_template_dir', 'push_all_issues', 'enable_engagement_epic_mapping', 'push_notes', 'product_openproject_sla_notification', 'risk_acceptance_expiration_notification']
+
+    def __init__(self, *args, **kwargs):
+        from dojo.openproject_link import helper as openproject_helper
+        # if the form is shown for an engagement, we set a placeholder text around inherited settings from product
+        self.target = kwargs.pop('target', 'product')
+        self.product = kwargs.pop('product', None)
+        self.engagement = kwargs.pop('engagement', None)
+        super().__init__(*args, **kwargs)
+
+        logger.debug('self.target: %s, self.product: %s, self.instance: %s', self.target, self.product, self.instance)
+        logger.debug('data: %s', self.data)
+        if self.target == 'engagement':
+            product_name = self.product.name if self.product else self.engagement.product.name if self.engagement.product else ''
+
+            self.fields['project_key'].widget = forms.TextInput(attrs={'placeholder': 'OpenProject settings inherited from product ''%s''' % product_name})
+            self.fields['project_key'].help_text = 'OpenProject settings are inherited from product ''%s'', unless configured differently here.' % product_name
+            self.fields['openproject_instance'].help_text = 'OpenProject settings are inherited from product ''%s'' , unless configured differently here.' % product_name
+
+            # if we don't have an instance, django will insert a blank empty one :-(
+            # so we have to check for id to make sure we only trigger this when there is a real instance from db
+            if self.instance.id:
+                logger.debug(' project instance found for engagement, unchecking inherit checkbox')
+                self.fields['openproject_instance'].required = True
+                self.fields['project_key'].required = True
+                self.initial['inherit_from_product'] = False
+                # once a openproject project config is attached to an engagement, we can't go back to inheriting
+                # because the config needs to remain in place for the existing openproject issues
+                self.fields['inherit_from_product'].disabled = True
+                self.fields['inherit_from_product'].help_text = 'Once an engagement has a OpenProject Project stored, you cannot switch back to inheritance to avoid breaking existing OpenProject issues'
+                self.fields['openproject_instance'].disabled = False
+                self.fields['project_key'].disabled = False
+                self.fields['issue_template_dir'].disabled = False
+                self.fields['component'].disabled = False
+                self.fields['push_all_issues'].disabled = False
+                self.fields['enable_engagement_epic_mapping'].disabled = False
+                self.fields['push_notes'].disabled = False
+                self.fields['product_openproject_sla_notification'].disabled = False
+                self.fields['risk_acceptance_expiration_notification'].disabled = False
+
+            elif self.product:
+                logger.debug('setting OpenProject project fields from product1')
+                self.initial['inherit_from_product'] = True
+                openproject_project_product = openproject_helper.get_openproject_project(self.product)
+                # we have to check that we are not in a POST request where openproject project config data is posted
+                # this is because initial values will overwrite the actual values entered by the user
+                # makes no sense, but seems to be accepted behaviour: https://code.djangoproject.com/ticket/30407
+                if openproject_project_product and not (self.prefix + '-openproject_instance') in self.data:
+                    logger.debug('setting openproject project fields from product2')
+                    self.initial['openproject_instance'] = openproject_project_product.openproject_instance.id if openproject_project_product.openproject_instance else None
+                    self.initial['project_key'] = openproject_project_product.project_key
+                    self.initial['issue_template_dir'] = openproject_project_product.issue_template_dir
+                    self.initial['push_all_issues'] = openproject_project_product.push_all_issues
+                    self.initial['enable_engagement_epic_mapping'] = openproject_project_product.enable_engagement_epic_mapping
+                    self.initial['push_notes'] = openproject_project_product.push_notes
+                    self.initial['product_openproject_sla_notification'] = openproject_project_product.product_openproject_sla_notification
+                    self.initial['risk_acceptance_expiration_notification'] = openproject_project_product.risk_acceptance_expiration_notification
+
+                    self.fields['openproject_instance'].disabled = True
+                    self.fields['project_key'].disabled = True
+                    self.fields['issue_template_dir'].disabled = True
+                    self.fields['push_all_issues'].disabled = True
+                    self.fields['enable_engagement_epic_mapping'].disabled = True
+                    self.fields['push_notes'].disabled = True
+                    self.fields['product_openproject_sla_notification'].disabled = True
+                    self.fields['risk_acceptance_expiration_notification'].disabled = True
+
+        else:
+            del self.fields['inherit_from_product']
+
+        # if we don't have an instance, django will insert a blank empty one :-(
+        # so we have to check for id to make sure we only trigger this when there is a real instance from db
+        if self.instance.id:
+            self.fields['openproject_instance'].required = True
+            self.fields['project_key'].required = True
+
+    def clean(self):
+        logger.debug('validating openproject project form')
+        cleaned_data = super().clean()
+
+        logger.debug('clean: inherit: %s', self.cleaned_data.get('inherit_from_product', False))
+        if not self.cleaned_data.get('inherit_from_product', False):
+            openproject_instance = self.cleaned_data.get('openproject_instance')
+            project_key = self.cleaned_data.get('project_key')
+
+            if project_key and openproject_instance:
+                return cleaned_data
+
+            if not project_key and not openproject_instance:
+                return cleaned_data
+
+            if self.target == 'engagement':
+                raise ValidationError('OpenProject Project needs a OpenProject Instance and OpenProject Project Key, or choose to inherit settings from product')
+            else:
+                raise ValidationError('OpenProject Project needs a OpenProject Instance and OpenProject Project Key, leave empty to have no OpenProject integration setup')
+
+
 class GITHUBFindingForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.enabled = kwargs.pop('enabled')
@@ -2857,6 +2966,23 @@ class JIRAImportScanForm(forms.Form):
     push_to_jira = forms.BooleanField(required=False, label="Push to JIRA", help_text="Checking this will create a new jira issue for each new finding.")
 
 
+class OpenProjectImportScanForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        self.push_all = kwargs.pop('push_all', False)
+
+        super(OpenProjectImportScanForm, self).__init__(*args, **kwargs)
+        if self.push_all:
+            # This will show the checkbox as checked and greyed out, this way the user is aware
+            # that issues will be pushed to OpenProject, given their product-level settings.
+            self.fields['push_to_openproject'].help_text = \
+                "Push all issues is enabled on this product. If you do not wish to push all issues" \
+                " to OpenProject, please disable Push all issues on this product."
+            self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+            self.fields['push_to_openproject'].disabled = True
+
+    push_to_openproject = forms.BooleanField(required=False, label="Push to OpenProject", help_text="Checking this will create a new openproject issue for each new finding.")
+
+
 class JIRAEngagementForm(forms.Form):
     prefix = 'jira-epic-form'
 
@@ -2872,6 +2998,22 @@ class JIRAEngagementForm(forms.Form):
                 self.fields['push_to_jira'].help_text = 'Checking this will update the existing EPIC in JIRA.'
 
     push_to_jira = forms.BooleanField(required=False, label="Create EPIC", help_text="Checking this will create an EPIC in JIRA for this engagement.")
+
+class OpenProjectEngagementForm(forms.Form):
+    prefix = 'openproject-epic-form'
+
+    def __init__(self, *args, **kwargs):
+        self.instance = kwargs.pop('instance', None)
+
+        super(OpenProjectEngagementForm, self).__init__(*args, **kwargs)
+
+        if self.instance:
+            if self.instance.has_jira_issue:
+                self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+                self.fields['push_to_openproject'].label = 'Update OpenProject Epic'
+                self.fields['push_to_openproject'].help_text = 'Checking this will update the existing EPIC in OpenProject.'
+
+    push_to_openproject = forms.BooleanField(required=False, label="Create EPIC", help_text="Checking this will create an EPIC in OpenProject for this engagement.")
 
 
 class GoogleSheetFieldsForm(forms.Form):

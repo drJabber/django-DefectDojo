@@ -250,27 +250,33 @@ def express_new_openproject(request):
             # authentication successful
             # Get the open and close keys
             try:
-                issue_id = opform.cleaned_data.get('issue_key')
-                key_url = op_server.strip('/') + '/rest/api/latest/issue/' + issue_id + '/transitions?expand=transitions.fields'
-                response = op._session.get(key_url).json()
-                logger.debug('Retrieved OpenProject issue successfully')
+                op_status_service = op.get_status_service()
+                op_statuses = op_status_service.find_all()
+                logger.debug('Retrieved OpenProject statuses successfully')
                 open_key = close_key = None
-                for node in response['transitions']:
-                    if node['to']['statusCategory']['name'] == 'To Do':
-                        open_key = int(node['id']) if not open_key else open_key
-                    if node['to']['statusCategory']['name'] == 'Done':
-                        close_key = int(node['id']) if not close_key else close_key
+                for op_status in op_statuses:
+                    if op_status.name.lower() == 'new':
+                        open_key = int(op_status.id) if not open_key else open_key
+                    if op_status.name.lower() == 'closed':
+                        close_key = int(op_status.id) if not close_key else close_key
             except Exception as e:
                 logger.exception(e)  # already logged in openproject_helper
                 messages.add_message(request,
                                     messages.ERROR,
-                                    'Unable to find Open/Close ID\'s (invalid issue key specified?). They will need to be found manually',
+                                    'Unable to find Open/Close ID\'s (custom status names in OpenProject?). They will need to be found manually',
                                     extra_tags='alert-danger')
                 return render(request, 'dojo/new_openproject.html',
                                         {'opform': opform})
             # Get the epic id name
             try:
-                epic_name = get_custom_field(op, 'Epic Name')
+                op_type_service = op.get_type_service()
+                op_types = op_type_service.find_all()
+                logger.debug('Retrieved OpenProject types successfully')
+                epic_name = None
+                for op_type in op_types:
+                    if op_type.name == 'Epic':
+                        epic_name = op_type.id
+                        break
             except Exception as e:
                 logger.exception(e)  # already logged in openproject_helper
                 messages.add_message(request,
@@ -284,11 +290,11 @@ def express_new_openproject(request):
                                     password=op_password,
                                     url=op_server,
                                     configuration_name=opform.cleaned_data.get('configuration_name'),
-                                    info_mapping_severity='Lowest',
+                                    info_mapping_severity='Info',
                                     low_mapping_severity='Low',
                                     medium_mapping_severity='Medium',
                                     high_mapping_severity='High',
-                                    critical_mapping_severity='Highest',
+                                    critical_mapping_severity='Immediate',
                                     epic_name_id=epic_name,
                                     open_status_key=open_key,
                                     close_status_key=close_key,

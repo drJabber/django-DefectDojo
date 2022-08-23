@@ -27,6 +27,7 @@ from dojo.forms import CheckForm, \
     UploadThreatForm, RiskAcceptanceForm, NoteForm, DoneForm, \
     EngForm, TestForm, ReplaceRiskAcceptanceProofForm, AddFindingsRiskAcceptanceForm, DeleteEngagementForm, ImportScanForm, \
     CredMappingForm, JIRAEngagementForm, JIRAImportScanForm, TypedNoteForm, JIRAProjectForm, \
+    OpenProjectProjectForm, OpenProjectImportScanForm, \
     EditRiskAcceptanceForm
 
 from dojo.models import Finding, Product, Engagement, Test, \
@@ -42,6 +43,7 @@ from dojo.finding.views import find_available_notetypes
 from functools import reduce
 from django.db.models.query import Prefetch, QuerySet
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import dojo.risk_acceptance.helper as ra_helper
 from dojo.risk_acceptance.helper import prefetch_for_expiration
 from dojo.finding.helper import NOT_ACCEPTED_FINDINGS_QUERY
@@ -105,10 +107,12 @@ def get_filtered_engagements(request, view):
     engagements = engagements.select_related('product', 'product__prod_type') \
         .prefetch_related('lead', 'tags', 'product__tags')
 
-    if System_Settings.objects.get().enable_jira:
+    if System_Settings.objects.get().enable_jira or System_Settings.objects.get().enable_openproject:
         engagements = engagements.prefetch_related(
             'jira_project__jira_instance',
-            'product__jira_project_set__jira_instance'
+            'product__jira_project_set__jira_instance',
+            'openproject_project__openproject_instance',
+            'product__openproject_project_set__openproject_instance'
         )
 
     engagements = EngagementDirectFilter(request.GET, queryset=engagements)
@@ -178,7 +182,9 @@ def engagements_all(request):
     if System_Settings.objects.get().enable_jira:
         filter_qs = filter_qs.prefetch_related(
             'engagement_set__jira_project__jira_instance',
-            'jira_project_set__jira_instance'
+            'jira_project_set__jira_instance',
+            'engagement_set__openproject_project__openproject_instance',
+            'openproject_project_set__openproject_instance'
         )
 
     filtered = EngagementFilter(
@@ -213,10 +219,15 @@ def edit_engagement(request, eid):
     jira_epic_form = None
     jira_project = None
     jira_error = False
+    op_project_form = None
+    op_epic_form = None
+    op_project = None
+    op_error = False
 
     if request.method == 'POST':
         form = EngForm(request.POST, instance=engagement, cicd=is_ci_cd, product=engagement.product, user=request.user)
         jira_project = jira_helper.get_jira_project(engagement, use_inheritance=False)
+        op_project = openproject_helper.get_openproject_project(engagement, use_inheritance=False)
 
         if form.is_valid():
             # first save engagement details
@@ -245,6 +256,12 @@ def edit_engagement(request, eid):
             success, jira_epic_form = jira_helper.process_jira_epic_form(request, engagement=engagement)
             error = error or not success
 
+            success, op_project_form = openproject_helper.process_openproject_project_form(request, instance=openproject_project, target='engagement', engagement=engagement, product=engagement.product)
+            error = error or not success
+
+            success, op_epic_form = openproject_helper.process_openproject_epic_form(request, engagement=engagement)
+            error = error or not success
+
             if not error:
                 if '_Add Tests' in request.POST:
                     return HttpResponseRedirect(
@@ -265,6 +282,13 @@ def edit_engagement(request, eid):
             logger.debug('showing jira-epic-form')
             jira_epic_form = JIRAEngagementForm(instance=engagement)
 
+        op_epic_form = None
+        if get_system_setting('enable_openproject'):
+            openproject_project = openproject_helper.get_openproject_project(engagement, use_inheritance=False)
+            op_project_form = OpenProjectProjectForm(instance=op_project, target='engagement', product=engagement.product)
+            logger.debug('showing openproject-epic-form')
+            op_epic_form = OpenProjectProjectForm(instance=engagement)
+
     if is_ci_cd:
         title = 'Edit CI/CD Engagement'
     else:
@@ -279,6 +303,8 @@ def edit_engagement(request, eid):
         'edit': True,
         'jira_epic_form': jira_epic_form,
         'jira_project_form': jira_project_form,
+        'op_epic_form': op_epic_form,
+        'op_project_form': op_project_form,
         'engagement': engagement,
     })
 
@@ -398,6 +424,9 @@ def view_engagement(request, eid):
     jissue = jira_helper.get_jira_issue(eng)
     jira_project = jira_helper.get_jira_project(eng)
 
+    opissue = openproject_helper.get_openproject_issue(eng)
+    openproject_project = openproject_helper.get_openproject_project(eng)
+
     try:
         check = Check_List.objects.get(engagement=eng)
     except:
@@ -467,6 +496,8 @@ def view_engagement(request, eid):
             'risks_accepted': risks_accepted,
             'jissue': jissue,
             'jira_project': jira_project,
+            'opissue': opissue,
+            'openproject_project': openproject_project,
             'creds': creds,
             'cred_eng': cred_eng,
             'network': network,
@@ -594,6 +625,7 @@ def import_scan_results(request, eid=None, pid=None):
     user_has_permission_or_403(user, engagement_or_product, Permissions.Import_Scan_Result)
 
     push_all_jira_issues = jira_helper.is_push_all_issues(engagement_or_product)
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(engagement_or_product)
 
     if request.method == "POST":
         form = ImportScanForm(request.POST, request.FILES)
@@ -606,7 +638,12 @@ def import_scan_results(request, eid=None, pid=None):
             logger.debug('jform valid: %s', jform.is_valid())
             logger.debug('jform errors: %s', jform.errors)
 
-        if form.is_valid() and (jform is None or jform.is_valid()):
+        if openproject_helper.get_openproject_project(engagement_or_product):
+            opform = OpenProjectImportScanForm(request.POST, push_all=push_all_openproject_issues, prefix='openprojectform')
+            logger.debug('opform valid: %s', opform.is_valid())
+            logger.debug('opform errors: %s', opform.errors)
+
+        if form.is_valid() and (jform is None or jform.is_valid()) and (opform is None or opform.is_valid()):
             scan = request.FILES.get('file', None)
             scan_date = form.cleaned_data['scan_date']
             minimum_severity = form.cleaned_data['minimum_severity']
@@ -657,6 +694,11 @@ def import_scan_results(request, eid=None, pid=None):
             # can't use helper as when push_all_jira_issues is True, the checkbox gets disabled and is always false
             # push_to_jira = jira_helper.is_push_to_jira(new_finding, jform.cleaned_data.get('push_to_jira'))
             push_to_jira = push_all_jira_issues or (jform and jform.cleaned_data.get('push_to_jira'))
+
+            # can't use helper as when push_all_openproject_issues is True, the checkbox gets disabled and is always false
+            # push_to_openproject = openproject_helper.is_push_to_openproject(new_finding, opform.cleaned_data.get('push_to_openproject'))
+            push_to_openproject = push_all_openproject_issues or (opform and opform.cleaned_data.get('push_to_openproject'))
+
             error = False
 
             # Save newly added endpoints
@@ -666,7 +708,8 @@ def import_scan_results(request, eid=None, pid=None):
                 importer = Importer()
                 test, finding_count, closed_finding_count, _ = importer.import_scan(scan, scan_type, engagement, user, environment, active=active, verified=verified, tags=tags,
                             minimum_severity=minimum_severity, endpoints_to_add=list(form.cleaned_data['endpoints']) + added_endpoints, scan_date=scan_date,
-                            version=version, branch_tag=branch_tag, build_id=build_id, commit_hash=commit_hash, push_to_jira=push_to_jira,
+                            version=version, branch_tag=branch_tag, build_id=build_id, commit_hash=commit_hash, 
+                            push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
                             close_old_findings=close_old_findings, group_by=group_by, api_scan_configuration=api_scan_configuration, service=service)
 
                 message = f'{scan_type} processed a total of {finding_count} findings'
@@ -713,6 +756,9 @@ def import_scan_results(request, eid=None, pid=None):
     if jira_helper.get_jira_project(engagement_or_product):
         jform = JIRAImportScanForm(push_all=push_all_jira_issues, prefix='jiraform')
 
+    if openproject_helper.get_openproject_project(engagement_or_product):
+        opform = OpenProjectImportScanForm(push_all=push_all_openproject_issues, prefix='openprojectform')
+
     form.fields['endpoints'].queryset = Endpoint.objects.filter(product__id=product_tab.product.id)
     form.fields['api_scan_configuration'].queryset = Product_API_Scan_Configuration.objects.filter(product__id=product_tab.product.id)
     return render(request,
@@ -724,6 +770,7 @@ def import_scan_results(request, eid=None, pid=None):
          'title': title,
          'cred_form': cred_form,
          'jform': jform,
+         'opform': opform,
          'scan_types': get_scan_types_sorted(),
          })
 
