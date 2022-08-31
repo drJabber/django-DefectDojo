@@ -27,7 +27,7 @@ from dojo.forms import CheckForm, \
     UploadThreatForm, RiskAcceptanceForm, NoteForm, DoneForm, \
     EngForm, TestForm, ReplaceRiskAcceptanceProofForm, AddFindingsRiskAcceptanceForm, DeleteEngagementForm, ImportScanForm, \
     CredMappingForm, JIRAEngagementForm, JIRAImportScanForm, TypedNoteForm, JIRAProjectForm, \
-    OpenProjectProjectForm, OpenProjectImportScanForm, \
+    OpenProjectProjectForm, OpenProjectEngagementForm, OpenProjectImportScanForm, \
     EditRiskAcceptanceForm
 
 from dojo.models import Finding, Product, Engagement, Test, \
@@ -256,7 +256,7 @@ def edit_engagement(request, eid):
             success, jira_epic_form = jira_helper.process_jira_epic_form(request, engagement=engagement)
             error = error or not success
 
-            success, op_project_form = openproject_helper.process_openproject_project_form(request, instance=openproject_project, target='engagement', engagement=engagement, product=engagement.product)
+            success, op_project_form = openproject_helper.process_openproject_project_form(request, instance=op_project, target='engagement', engagement=engagement, product=engagement.product)
             error = error or not success
 
             success, op_epic_form = openproject_helper.process_openproject_epic_form(request, engagement=engagement)
@@ -266,6 +266,9 @@ def edit_engagement(request, eid):
                 if '_Add Tests' in request.POST:
                     return HttpResponseRedirect(
                         reverse('add_tests', args=(engagement.id, )))
+                elif "_Import Scan Results" in request.POST:
+                    return HttpResponseRedirect(
+                        reverse('import_scan_results', args=(engagement.id,)))
                 else:
                     return HttpResponseRedirect(
                         reverse('view_engagement', args=(engagement.id, )))
@@ -284,10 +287,10 @@ def edit_engagement(request, eid):
 
         op_epic_form = None
         if get_system_setting('enable_openproject'):
-            openproject_project = openproject_helper.get_openproject_project(engagement, use_inheritance=False)
+            op_project = openproject_helper.get_openproject_project(engagement, use_inheritance=False)
             op_project_form = OpenProjectProjectForm(instance=op_project, target='engagement', product=engagement.product)
             logger.debug('showing openproject-epic-form')
-            op_epic_form = OpenProjectProjectForm(instance=engagement)
+            op_epic_form = OpenProjectEngagementForm(instance=engagement)
 
     if is_ci_cd:
         title = 'Edit CI/CD Engagement'
@@ -436,6 +439,7 @@ def view_engagement(request, eid):
     note_type_activation = Note_Type.objects.filter(is_active=True).count()
     if note_type_activation:
         available_note_types = find_available_notetypes(notes)
+
     form = DoneForm()
     files = eng.files.all()
     if request.method == 'POST':
@@ -610,6 +614,7 @@ def import_scan_results(request, eid=None, pid=None):
     cred_form = CredMappingForm()
     finding_count = 0
     jform = None
+    opform = None
     user = request.user
 
     if eid:

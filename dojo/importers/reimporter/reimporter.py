@@ -3,6 +3,7 @@ import logging
 
 import dojo.finding.helper as finding_helper
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import dojo.notifications.helper as notifications_helper
 from dojo.decorators import dojo_async_task
 from dojo.celery import app
@@ -27,7 +28,9 @@ class DojoDefaultReImporter(object):
     @dojo_async_task
     @app.task(ignore_result=False)
     def process_parsed_findings(self, test, parsed_findings, scan_type, user, active, verified, minimum_severity=None,
-                                endpoints_to_add=None, push_to_jira=None, group_by=None, now=timezone.now(), service=None, scan_date=None, **kwargs):
+                                endpoints_to_add=None, 
+                                push_to_jira=None, push_to_openproject=None,
+                                group_by=None, now=timezone.now(), service=None, scan_date=None, **kwargs):
 
         items = parsed_findings
         original_items = list(test.finding_set.all())
@@ -238,7 +241,7 @@ class DojoDefaultReImporter(object):
                 if is_finding_groups_enabled() and finding.finding_group:
                     finding.save()
                 else:
-                    finding.save(push_to_jira=push_to_jira)
+                    finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
         to_mitigate = set(original_items) - set(reactivated_items) - set(unchanged_items)
         # due to #3958 we can have duplicates inside the same report
@@ -252,6 +255,11 @@ class DojoDefaultReImporter(object):
         if is_finding_groups_enabled() and push_to_jira:
             for finding_group in set([finding.finding_group for finding in reactivated_items + unchanged_items + new_items if finding.finding_group is not None]):
                 jira_helper.push_to_jira(finding_group)
+
+        if is_finding_groups_enabled() and push_to_openproject:
+            for finding_group in set([finding.finding_group for finding in reactivated_items + unchanged_items + new_items if finding.finding_group is not None]):
+                openproject_helper.push_to_openproject(finding_group)
+
         sync = kwargs.get('sync', False)
         if not sync:
             serialized_new_items = [serializers.serialize('json', [finding, ]) for finding in new_items]
@@ -262,7 +270,7 @@ class DojoDefaultReImporter(object):
 
         return new_items, reactivated_items, to_mitigate, untouched
 
-    def close_old_findings(self, test, to_mitigate, scan_date_time, user, push_to_jira=None):
+    def close_old_findings(self, test, to_mitigate, scan_date_time, user, push_to_jira=None, push_to_openproject=None):
         logger.debug('IMPORT_SCAN: Closing findings no longer present in scan report')
         mitigated_findings = []
         for finding in to_mitigate:
@@ -286,7 +294,7 @@ class DojoDefaultReImporter(object):
                     # don't try to dedupe findings that we are closing
                     finding.save(dedupe_option=False)
                 else:
-                    finding.save(push_to_jira=push_to_jira, dedupe_option=False)
+                    finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, dedupe_option=False)
 
                 note = Notes(entry="Mitigated by %s re-upload." % test.test_type,
                             author=user)
@@ -298,11 +306,17 @@ class DojoDefaultReImporter(object):
             for finding_group in set([finding.finding_group for finding in to_mitigate if finding.finding_group is not None]):
                 jira_helper.push_to_jira(finding_group)
 
+        if is_finding_groups_enabled() and push_to_openproject:
+            for finding_group in set([finding.finding_group for finding in to_mitigate if finding.finding_group is not None]):
+                openproject_helper.push_to_openproject(finding_group)
+
         return mitigated_findings
 
     def reimport_scan(self, scan, scan_type, test, active=True, verified=True, tags=None, minimum_severity=None,
                     user=None, endpoints_to_add=None, scan_date=None, version=None, branch_tag=None, build_id=None,
-                    commit_hash=None, push_to_jira=None, close_old_findings=True, group_by=None, api_scan_configuration=None,
+                    commit_hash=None, 
+                    push_to_jira=None, push_to_openproject=None, 
+                    close_old_findings=True, group_by=None, api_scan_configuration=None,
                     service=None):
 
         logger.debug(f'REIMPORT_SCAN: parameters: {locals()}')
@@ -345,7 +359,8 @@ class DojoDefaultReImporter(object):
             for findings_list in chunk_list:
                 result = self.process_parsed_findings(test, findings_list, scan_type, user, active, verified,
                                                       minimum_severity=minimum_severity, endpoints_to_add=endpoints_to_add,
-                                                      push_to_jira=push_to_jira, group_by=group_by, now=now, service=service, scan_date=scan_date, sync=False)
+                                                      push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
+                                                      group_by=group_by, now=now, service=service, scan_date=scan_date, sync=False)
                 # Since I dont want to wait until the task is done right now, save the id
                 # So I can check on the task later
                 results_list += [result]
@@ -366,12 +381,16 @@ class DojoDefaultReImporter(object):
             new_findings, reactivated_findings, findings_to_mitigate, untouched_findings = \
                 self.process_parsed_findings(test, parsed_findings, scan_type, user, active, verified,
                                              minimum_severity=minimum_severity, endpoints_to_add=endpoints_to_add,
-                                             push_to_jira=push_to_jira, group_by=group_by, now=now, service=service, scan_date=scan_date, sync=True)
+                                             push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
+                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=True)
 
         closed_findings = []
         if close_old_findings:
             logger.debug('REIMPORT_SCAN: Closing findings no longer present in scan report')
-            closed_findings = self.close_old_findings(test, findings_to_mitigate, scan_date, user=user, push_to_jira=push_to_jira)
+            closed_findings = self.close_old_findings(test, findings_to_mitigate, scan_date, 
+                                                      user=user, 
+                                                      push_to_jira=push_to_jira,
+                                                      push_to_openproject=push_to_openproject)
 
         logger.debug('REIMPORT_SCAN: Updating test/engagement timestamps')
         importer_utils.update_timestamps(test, version, branch_tag, build_id, commit_hash, now, scan_date)
@@ -380,8 +399,9 @@ class DojoDefaultReImporter(object):
         if settings.TRACK_IMPORT_HISTORY:
             logger.debug('REIMPORT_SCAN: Updating Import History')
             test_import = importer_utils.update_import_history(Test_Import.REIMPORT_TYPE, active, verified, tags, minimum_severity, endpoints_to_add,
-                                                                version, branch_tag, build_id, commit_hash, push_to_jira, close_old_findings,
-                                                                test, new_findings, closed_findings, reactivated_findings, untouched_findings)
+                                                                version, branch_tag, build_id, commit_hash, 
+                                                                push_to_jira, push_to_openproject, 
+                                                                close_old_findings, test, new_findings, closed_findings, reactivated_findings, untouched_findings)
 
         logger.debug('REIMPORT_SCAN: Generating notifications')
 

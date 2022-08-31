@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core import serializers
 import dojo.finding.helper as finding_helper
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import dojo.notifications.helper as notifications_helper
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -60,7 +61,7 @@ class DojoDefaultImporter(object):
     @dojo_async_task
     @app.task(ignore_result=False)
     def process_parsed_findings(self, test, parsed_findings, scan_type, user, active, verified, minimum_severity=None,
-                                endpoints_to_add=None, push_to_jira=None, group_by=None, now=timezone.now(), service=None, scan_date=None, **kwargs):
+                                endpoints_to_add=None, push_to_jira=None, push_to_openproject=None, group_by=None, now=timezone.now(), service=None, scan_date=None, **kwargs):
         logger.debug('endpoints_to_add: %s', endpoints_to_add)
         new_findings = []
         items = parsed_findings
@@ -162,17 +163,22 @@ class DojoDefaultImporter(object):
             if is_finding_groups_enabled() and item.finding_group:
                 item.save()
             else:
-                item.save(push_to_jira=push_to_jira)
+                item.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
         if is_finding_groups_enabled() and push_to_jira:
             for finding_group in set([finding.finding_group for finding in new_findings if finding.finding_group is not None]):
                 jira_helper.push_to_jira(finding_group)
+
+        if is_finding_groups_enabled() and push_to_openproject:
+            for finding_group in set([finding.finding_group for finding in new_findings if finding.finding_group is not None]):
+                openproject_helper.push_to_openproject(finding_group)
+
         sync = kwargs.get('sync', False)
         if not sync:
             return [serializers.serialize('json', [finding, ]) for finding in new_findings]
         return new_findings
 
-    def close_old_findings(self, test, scan_date_time, user, push_to_jira=None, service=None):
+    def close_old_findings(self, test, scan_date_time, user, push_to_jira=None, push_to_openproject=None, service=None):
         old_findings = []
         # Close old active findings that are not reported by this scan.
         new_hash_codes = test.finding_set.values('hash_code')
@@ -221,17 +227,22 @@ class DojoDefaultImporter(object):
                 # don't try to dedupe findings that we are closing
                 old_finding.save(dedupe_option=False)
             else:
-                old_finding.save(dedupe_option=False, push_to_jira=push_to_jira)
+                old_finding.save(dedupe_option=False, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
         if is_finding_groups_enabled() and push_to_jira:
             for finding_group in set([finding.finding_group for finding in old_findings if finding.finding_group is not None]):
                 jira_helper.push_to_jira(finding_group)
 
+        if is_finding_groups_enabled() and push_to_openproject:
+            for finding_group in set([finding.finding_group for finding in old_findings if finding.finding_group is not None]):
+                openproject_helper.push_to_openproject(finding_group)
+
         return old_findings
 
     def import_scan(self, scan, scan_type, engagement, lead, environment, active, verified, tags=None, minimum_severity=None,
                     user=None, endpoints_to_add=None, scan_date=None, version=None, branch_tag=None, build_id=None,
-                    commit_hash=None, push_to_jira=None, close_old_findings=False, group_by=None, api_scan_configuration=None,
+                    commit_hash=None, push_to_jira=None, push_to_openproject=None, close_old_findings=False, 
+                    group_by=None, api_scan_configuration=None,
                     service=None, title=None):
 
         logger.debug(f'IMPORT_SCAN: parameters: {locals()}')
@@ -306,7 +317,8 @@ class DojoDefaultImporter(object):
             for findings_list in chunk_list:
                 result = self.process_parsed_findings(test, findings_list, scan_type, user, active,
                                                             verified, minimum_severity=minimum_severity,
-                                                            endpoints_to_add=endpoints_to_add, push_to_jira=push_to_jira,
+                                                            endpoints_to_add=endpoints_to_add, 
+                                                            push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=False)
                 # Since I dont want to wait until the task is done right now, save the id
                 # So I can check on the task later
@@ -323,13 +335,18 @@ class DojoDefaultImporter(object):
         else:
             new_findings = self.process_parsed_findings(test, parsed_findings, scan_type, user, active,
                                                             verified, minimum_severity=minimum_severity,
-                                                            endpoints_to_add=endpoints_to_add, push_to_jira=push_to_jira,
+                                                            endpoints_to_add=endpoints_to_add, 
+                                                            push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=True)
 
         closed_findings = []
         if close_old_findings:
             logger.debug('IMPORT_SCAN: Closing findings no longer present in scan report')
-            closed_findings = self.close_old_findings(test, scan_date, user=user, push_to_jira=push_to_jira, service=service)
+            closed_findings = self.close_old_findings(test, scan_date, 
+                                                      user=user, 
+                                                      push_to_jira=push_to_jira, 
+                                                      push_to_openproject=push_to_openproject,
+                                                      service=service)
 
         logger.debug('IMPORT_SCAN: Updating test/engagement timestamps')
         importer_utils.update_timestamps(test, version, branch_tag, build_id, commit_hash, now, scan_date)
@@ -339,7 +356,8 @@ class DojoDefaultImporter(object):
             logger.debug('IMPORT_SCAN: Updating Import History')
             test_import = importer_utils.update_import_history(Test_Import.IMPORT_TYPE, active, verified, tags, minimum_severity,
                                                                 endpoints_to_add, version, branch_tag, build_id, commit_hash,
-                                                                push_to_jira, close_old_findings, test, new_findings, closed_findings)
+                                                                push_to_jira, push_to_openproject, 
+                                                                close_old_findings, test, new_findings, closed_findings)
 
         logger.debug('IMPORT_SCAN: Generating notifications')
         notifications_helper.notify_test_created(test)

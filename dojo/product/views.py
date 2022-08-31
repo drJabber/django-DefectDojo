@@ -1052,7 +1052,7 @@ def new_eng_for_app(request, pid, cicd=False):
                 else:
                     return HttpResponseRedirect(reverse('view_engagement', args=(engagement.id,)))
             else:
-                # engagement was saved, but JIRA errors, so goto edit_engagement
+                # engagement was saved, but JIRA/OpenProject errors, so goto edit_engagement
                 logger.debug('new_eng_for_app: jira/openproject errors')
                 return HttpResponseRedirect(reverse('edit_engagement', args=(engagement.id,)))
         else:

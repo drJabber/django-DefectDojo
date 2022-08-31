@@ -275,6 +275,14 @@ def get_finding_filter_fields(metrics=False, similar=False):
             'jira_issue__jira_key',
         ])
 
+    if get_system_setting('enable_openproject'):
+        fields.extend([
+            'has_openproject_issue',
+            'openproject_creation',
+            'openproject_change',
+            'openproject_issue__openproject_id',
+        ])
+
     if is_finding_groups_enabled():
         fields.extend([
             'has_finding_group',
@@ -284,6 +292,11 @@ def get_finding_filter_fields(metrics=False, similar=False):
         if get_system_setting('enable_jira'):
             fields.extend([
                 'has_jira_group_issue',
+            ])
+
+        if get_system_setting('enable_openproject'):
+            fields.extend([
+                'has_openproject_group_issue',
             ])
 
     return fields
@@ -1050,6 +1063,8 @@ class ApiFindingFilter(DojoFilter):
     date = DateRangeFilter()
     jira_creation = DateRangeFilter(field_name='jira_issue__jira_creation')
     jira_change = DateRangeFilter(field_name='jira_issue__jira_change')
+    openproject_creation = DateRangeFilter(field_name='openrpoject_issue__openproject_creation')
+    openproject_change = DateRangeFilter(field_name='openproject_issue__openproject_change')
     last_reviewed = DateRangeFilter()
     mitigated = DateRangeFilter()
     # NumberInFilter
@@ -1216,6 +1231,21 @@ class FindingFilter(FindingFilterWithTags):
                                         lookup_expr='isnull',
                                         exclude=True,
                                         label='Has Group JIRA')
+
+    if get_system_setting('enable_openproject'):
+        has_openproject_issue = BooleanFilter(field_name='openproject_issue',
+                                    lookup_expr='isnull',
+                                    exclude=True,
+                                    label='Has OpenProject')
+        openproject_creation = DateRangeFilter(field_name='openproject_issue__openproject_creation', label='OpenProject Creation')
+        openproject_change = DateRangeFilter(field_name='openproject_issue__openproject_change', label='OpenProject Updated')
+        openproject_issue__openproject_id = CharFilter(field_name='openproject_issue__openproject_id', lookup_expr='icontains', label="OpenProject issue")
+
+        if is_finding_groups_enabled():
+            has_openproject_group_issue = BooleanFilter(field_name='finding_group__openproject_issue',
+                                        lookup_expr='isnull',
+                                        exclude=True,
+                                        label='Has Group OpenProject')
 
     has_component = BooleanFilter(field_name='component_name',
                                 lookup_expr='isnull',
@@ -1935,7 +1965,8 @@ class ReportFindingFilter(FindingFilterWithTags):
                    'endpoint', 'references', 'test', 'sonarqube_issue',
                    'thread_id', 'notes', 'endpoints', 'endpoint_status',
                    'numerical_severity', 'reporter', 'last_reviewed',
-                   'jira_creation', 'jira_change', 'files']
+                   'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 
+                   'files']
 
     def __init__(self, *args, **kwargs):
         self.prod_type = None

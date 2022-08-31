@@ -3008,7 +3008,7 @@ class OpenProjectEngagementForm(forms.Form):
         super(OpenProjectEngagementForm, self).__init__(*args, **kwargs)
 
         if self.instance:
-            if self.instance.has_jira_issue:
+            if self.instance.has_openproject_issue:
                 self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
                 self.fields['push_to_openproject'].label = 'Update OpenProject Epic'
                 self.fields['push_to_openproject'].help_text = 'Checking this will update the existing EPIC in OpenProject.'

@@ -3374,7 +3374,7 @@ class JIRA_Instance(models.Model):
             return self.medium_mapping_severity
         elif status == 'High':
             return self.high_mapping_severity
-        elif status == 'Critical':
+        elif status == 'Critical': 
             return self.critical_mapping_severity
         else:
             return 'N/A'
@@ -3572,7 +3572,7 @@ class OpenProject_Instance(models.Model):
             return self.medium_mapping_severity
         elif status == 'High':
             return self.high_mapping_severity
-        elif status == 'Immediate':
+        elif status == 'Critical':
             return self.critical_mapping_severity
         else:
             return 'N/A'

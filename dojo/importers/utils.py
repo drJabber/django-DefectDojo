@@ -41,7 +41,9 @@ def update_timestamps(test, version, branch_tag, build_id, commit_hash, now, sca
 
 
 def update_import_history(type, active, verified, tags, minimum_severity, endpoints_to_add, version, branch_tag,
-                            build_id, commit_hash, push_to_jira, close_old_findings, test,
+                            build_id, commit_hash, 
+                            push_to_jira, push_to_openproject,
+                            close_old_findings, test,
                             new_findings=[], closed_findings=[], reactivated_findings=[], untouched_findings=[]):
     logger.debug("new: %d closed: %d reactivated: %d untouched: %d", len(new_findings), len(closed_findings), len(reactivated_findings), len(untouched_findings))
     # json field
@@ -51,6 +53,7 @@ def update_import_history(type, active, verified, tags, minimum_severity, endpoi
     import_settings['minimum_severity'] = minimum_severity
     import_settings['close_old_findings'] = close_old_findings
     import_settings['push_to_jira'] = push_to_jira
+    import_settings['push_to_openproject'] = push_to_openproject
     import_settings['tags'] = tags
 
     # tags=tags TODO no tags field in api for reimport it seems
