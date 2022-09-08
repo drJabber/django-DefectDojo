@@ -480,7 +480,7 @@
         </div>
         {% endif %}
     {% endif %}
-    {% if finding.service or finding.file_path or finding.line > 0 or finding.has_jira_configured or finding.has_jira_issue or finding.github_issue or finding.github_conf_new or finding.finding_group or finding.component_name or finding.nb_occurences > 1 %}
+    {% if finding.service or finding.file_path or finding.line > 0 or finding.has_jira_configured or finding.has_jira_issue or finding.has_openproject_configured or finding.has_openproject_issue or finding.github_issue or finding.github_conf_new or finding.finding_group or finding.component_name or finding.nb_occurences > 1 %}
     <div class="panel panel-default">
         <table id="error_notes" class="table-striped table table-condensed table-hover centered">
             <tr>
@@ -505,6 +505,10 @@
                 {% if finding.has_jira_configured or finding.jira_issue %}
                 <th>JIRA</th>
                 <th>JIRA Change</th>
+                {% endif %}
+                {% if finding.has_openproject_configured or finding.openproject_issue %}
+                <th>OpenProject</th>
+                <th>OpenProject Change</th>
                 {% endif %}
                 {% if finding.github_conf_new or finding.github_issue %}
                 <th>GitHub</th>
@@ -594,6 +598,42 @@
                         {% endif %}
                     </td>
                 {% endif %}
+                {% if finding.has_openproject_configured or finding.has_openproject_issue or finding.has_openproject_group_issue %}
+                    <td id="openproject">
+                        {% if finding.has_openproject_group_issue %}
+                            <a href="{{ finding.finding_group | openproject_issue_url }}"
+                            target="_blank" title="{{ finding.finding_group | openproject_issue_url }} (group)">{{ finding.finding_group | openproject_key }}</a>
+                        {% endif %}
+                        {% if finding.has_openproject_issue %}
+                            <a href="{{ finding | openproject_issue_url }}"
+                            target="_blank" title="{{ finding | openproject_issue_url }}">{{ finding | openproject_key }}</a>
+                            <i id="unlink_openproject" class="fa fa-trash" title="Unlink OpenProject issue from this finding."></i>
+                            <i id="push_to_openproject" class="fa fa-share-square" title="Push finding data to linked OpenProject issue."></i>
+                        {% else %}
+                            {% if can_be_pushed_to_openproject %}
+                                {% if not finding.has_openproject_group_issue %}
+                                None
+                                <i id="push_to_openproject" class="fa fa-share-square" title="Create OpenProject issue for this finding"></i>
+                                {% comment %} <a href="{% url 'finding_link_to_openproject' finding.id %}" title="Link existing OpenProject issue to finding.">
+                                    <i class="fa fa-asterisk" title="Link existing OpenProject issue to finding."></i>
+                                </a> {% endcomment %}
+                                {% endif %}
+                            {% else %}
+                                <i class="fa fa-question-circle has-popover" data-trigger="hover"
+                                data-content="{{ can_be_pushed_to_openproject_error }}"
+                                data-placement="bottom" data-container="body">
+                                </i>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if finding.has_openproject_group_issue %}
+                            <div title="{{ finding.finding_group.openproject_issue.openproject_change|date:"DATETIME_FORMAT" }} (group)">{{ finding.finding_group.openproject_issue.openproject_change|naturalday }}</div>
+                        {% elif finding.openproject_issue %}
+                            <div title="{{ finding.openproject_issue.openproject_change|date:"DATETIME_FORMAT" }}">{{ finding.openproject_issue.openproject_change|naturalday }}</div>
+                        {% endif %}
+                    </td>
+                {% endif %}
                 {% if finding.github_conf_new or finding.github_issue %}
                     <td>
                     {% if finding.github_issue %}
@@ -605,6 +645,7 @@
                     <td>
                         {{ finding.finding_group.name }}
                         <i id="push_group_to_jira_{{ finding.finding_group.group.id }}" data-group-id="{{ finding.finding_group.id }}" class="fa fa-share-square push_group_to_jira" title="Update JIRA issue with current data from this group of findings."></i>
+                        <i id="push_group_to_openproject_{{ finding.finding_group.group.id }}" data-group-id="{{ finding.finding_group.id }}" class="fa fa-share-square push_group_to_openproject" title="Update OpenProject issue with current data from this group of findings."></i>
                     </td>
                 {% endif %}
             </tr>
@@ -1120,6 +1161,34 @@
             });
         }
 
+        function openproject_action(elem, url) {
+            $(elem).removeClass().addClass('fa fa-spinner fa-spin')
+
+            $.ajax({
+                type: "post",
+                dataType:'json',
+                data: '',
+                context: this,
+                url: url,
+                // The ``X-CSRFToken`` evidently can't be set in the
+                // ``headers`` option, so force it here.
+                // This method requires jQuery 1.5+.
+                beforeSend: function (jqXHR, settings) {
+                    // Pull the token out of the DOM.
+                    jqXHR.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+                },
+                success: function (data, textStatus, jqXHR) {
+                },
+                error: function (request, status, error) {
+                    console.log('error')
+                    console.log(request.responseText)
+                },
+                complete: function(e) {
+                    location.reload()
+                }
+            });
+        }
+
         $("#push_to_jira").on('click', function(e) {
             jira_action(this,'{% url 'finding_push_to_jira' finding.id %}')
         });
@@ -1130,6 +1199,18 @@
 
         $(".push_group_to_jira").on('click', function(e) {
             jira_action(this, '/finding_group/' + this.dataset.groupId + '/jira/push')
+        });
+
+        $("#push_to_openproject").on('click', function(e) {
+            openproject_action(this,'{% url 'finding_push_to_openproject' finding.id %}')
+        });
+
+        $("#unlink_openproject").on('click', function(e) {
+            openproject_action(this,'{% url 'finding_unlink_openproject' finding.id %}')
+        });
+
+        $(".push_group_to_openproject").on('click', function(e) {
+            openproject_action(this, '/finding_group/' + this.dataset.groupId + '/openproject/push')
         });
 
         var checkbox_count = 0;
@@ -1324,6 +1405,9 @@
                 { "data": "file_path" },
                 {% if system_settings.enable_jira %}
                     { "data": "jira_id" },
+                {% endif %}
+                {% if system_settings.enable_openproject %}
+                    { "data": "openproject_id" },
                 {% endif %}
                 { "data": "action" },
               ];

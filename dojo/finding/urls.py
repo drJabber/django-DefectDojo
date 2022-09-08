@@ -121,4 +121,8 @@ urlpatterns = [
     url(r'^finding/(?P<fid>\d+)/jira/push', views.push_to_jira, name='finding_push_to_jira'),
     # url(r'^finding/(?P<fid>\d+)/jira/push', views.finding_link_to_jira, name='finding_link_to_jira'),
 
+    url(r'^finding/(?P<fid>\d+)/openproject/unlink', views.unlink_openproject, name='finding_unlink_openproject'),
+    url(r'^finding/(?P<fid>\d+)/openproject/push', views.push_to_openproject, name='finding_push_to_openproject'),
+    # url(r'^finding/(?P<fid>\d+)/openproject/push', views.finding_link_to_openproject, name='finding_link_to_openproject'),
+
 ]

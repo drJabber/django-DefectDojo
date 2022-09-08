@@ -27,6 +27,11 @@
                 <hr>
                 {% include "dojo/form_fields.html" with form=jform %}
             {% endif %}
+            {% if opform %}
+                <h4> OpenProject </h4>
+                <hr>
+                {% include "dojo/form_fields.html" with form=opform %}
+            {% endif %}
             {% if gform %}
                 <h3> GitHub </h3>
                 <hr>
@@ -71,6 +76,10 @@
                         <a href="{{ finding.duplicate_finding | jira_issue_url }}"
                         target="_blank" title="{{ finding.duplicate_finding | jira_issue_url }}">{{ finding.duplicate_finding | jira_key }}</a>
                     {% endif %}
+                    {% if finding.duplicate_finding.openproject_issue %}
+                        <a href="{{ finding.duplicate_finding | openproject_issue_url }}"
+                        target="_blank" title="{{ finding.duplicate_finding | openproject_issue_url }}">{{ finding.duplicate_finding | openproject_key }}</a>
+                    {% endif %}
                     ]
                 {% endif %}
             </span>
@@ -97,6 +106,29 @@
                     </div>
                 </div>
                 {% include "dojo/form_fields.html" with form=jform %}
+            {% endif %}
+            {% if opform %}
+                <h4> OpenProject </h4>
+                <hr>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="id_openproject_issue">OpenProject URL
+                        <i class="fa fa-question-circle has-popover" data-trigger="hover" data-content="OpenProject URL connected to this findings product or engagement" data-placement="right" data-container="body" data-original-title="" title="">
+                        </i>
+                    </label>
+                    <div class="col-sm-10 form-control-static">
+                        {% if finding.has_openproject_group_issue %}
+                            <a href="{{ finding.finding_group | openproject_issue_url }}"
+                            target="_blank" title="{{ finding.finding_group | openproject_issue_url }} (group)">{{ finding.finding_group | openproject_issue_url }} (group)</a>
+                        {% elif finding.has_openproject_issue %}
+                            <a href="{{ finding | openproject_issue_url }}"
+                            target="_blank"> {{ finding | openproject_issue_url }} </a>
+                        {% else %}
+                            <a href="{{ finding | openproject_project_url }}"
+                            target="_blank"> {{ finding | openproject_project_url }} </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% include "dojo/form_fields.html" with form=opform %}
             {% endif %}
             {% if gform %}
                 <h4> GitHub </h4>

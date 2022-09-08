@@ -3568,7 +3568,7 @@ class OpenProject_Instance(models.Model):
             return self.info_mapping_severity
         elif status == 'Low':
             return self.low_mapping_severity
-        elif status == 'Normal':
+        elif status == 'Medium':
             return self.medium_mapping_severity
         elif status == 'High':
             return self.high_mapping_severity

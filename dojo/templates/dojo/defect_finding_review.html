@@ -2,7 +2,7 @@
 {% load event_tags %}
 {% block content %}
     {{ block.super }}
-    <h3> Review Finding from Jira</h3>
+    <h3> Review Finding from Jira/OpenProject</h3>
     <h4>{{ finding.title }}</h4>
     <p>Please provide a description on why the finding should be closed or marked as not fixed.</p>
     <form class="form-horizontal" action="{% url 'defect_finding_review' finding.id %}" method="post">

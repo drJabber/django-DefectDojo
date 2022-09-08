@@ -232,7 +232,7 @@ def get_openproject_issue_url(issue):
     if op_instance is None:
         return None
 
-    return op_instance.url + '/projects/' + op_project.project_key
+    return op_instance.url + '/work_packages/' + issue.openproject_id
 
 
 def get_openproject_project_url(obj):
@@ -411,18 +411,6 @@ def openproject_get_resolution_id(openproject, issue, status):
     return resolution_id
 
 
-def openproject_transition(openproject, issue, transition_id):
-    try:
-        if issue and transition_id:
-            openproject.transition_issue(issue, transition_id)
-            return True
-    except BusinessError as openproject_error:
-        logger.debug('error transisioning openproject issue ' + issue.key + ' ' + str(openproject_error))
-        logger.exception(openproject_error)
-        log_openproject_generic_alert('error transitioning openproject issue ' + issue.key, str(openproject_error))
-        return None
-
-
 # Used for unit testing so geting all the connections is manadatory
 def get_openproject_updated(finding):
     if finding.has_openproject_issue:
@@ -482,20 +470,6 @@ def log_openproject_message(text, finding):
         source='OpenProject', finding=finding)
 
 
-def get_labels(obj):
-    # Update Label with system setttings label
-    labels = []
-    system_settings = System_Settings.objects.get()
-    system_labels = system_settings.jira_labels
-    if system_labels:
-        system_labels = system_labels.split()
-        for system_label in system_labels:
-            labels.append(system_label)
-        # Update the label with the product name (underscore)
-        labels.append(prod_name(obj).replace(" ", "_"))
-    return labels
-
-
 def get_tags(obj):
     # Update Label with system setttings label
     tags = []
@@ -541,9 +515,9 @@ def openproject_priority(obj):
 
 def openproject_environment(obj):
     if type(obj) == Finding:
-        return "\n".join([str(endpoint) for endpoint in obj.endpoints.all()])
+        return "; ".join([str(endpoint) for endpoint in obj.endpoints.all()])
     elif type(obj) == Finding_Group:
-        return "\n".join([openproject_environment(finding) for finding in obj.findings.all()])
+        return "; ".join([openproject_environment(finding) for finding in obj.findings.all()])
     else:
         return ''
 
@@ -646,9 +620,9 @@ def add_openproject_issue(obj, *args, **kwargs):
 
     logger.debug('Trying to create a new OpenProject issue for %s...', to_str_typed(obj))
     try:
-        # JIRAError.log_to_tempfile = False
+        # BusinessError.log_to_tempfile = False
         openproject = get_openproject_connection(openproject_instance)
-        meta = get_openproject_meta(openproject, openproject_project)
+        # meta = get_openproject_meta(openproject, openproject_project)
 
         op_project_service = openproject.get_project_service()
         op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
@@ -688,7 +662,6 @@ def add_openproject_issue(obj, *args, **kwargs):
             if duedate:
                 wp.dueDate = duedate.strftime('%Y-%m-%d')
 
-        logger.info(f'add issue wp={json.dumps(wp.__dict__)}')
         new_issue = op_project_service.create_work_package(op_project, wp)
 
         # Upload dojo finding screenshots to OpenProject
@@ -725,9 +698,9 @@ def add_openproject_issue(obj, *args, **kwargs):
         op_issue.openproject_creation = timezone.now()
         op_issue.openproject_change = timezone.now()
         op_issue.save()
-        # issue = openproject.issue(new_issue.id)
 
         logger.info('Created the following openproject issue for %d:%s', obj.id, to_str_typed(obj))
+
         return True
     except TemplateDoesNotExist as e:
         logger.exception(e)
@@ -741,6 +714,23 @@ def add_openproject_issue(obj, *args, **kwargs):
 
 
 # we need two separate celery tasks due to the decorators we're using to map to/from ids
+
+def openproject_issue_description(obj):
+    description = obj.description
+    html_description = f'<p>{description}</p>'
+    openproject_labels = ', '.join(get_tags(obj))
+    env = openproject_environment(obj)
+
+    description = '\n'.join([description, 'Labels:', openproject_labels, 'Environment:', env])
+    html_description = '\n'.join([
+        f'<p>{description}</p>',
+        '<p><strong>Labels</strong></p>',
+        f'<p>{openproject_labels}</p>',
+        '<p><strong>Environment</strong></p>',
+        f'<p>{env}</p>'
+    ])
+
+    return description, html_description
 
 @dojo_model_to_id
 @dojo_async_task
@@ -764,14 +754,14 @@ def update_openproject_issue(obj, *args, **kwargs):
     if not is_openproject_enabled():
         return False
 
-    openproject_project = get_openproject_project(obj)
-    openproject_instance = get_openproject_instance(obj)
-
     if not is_openproject_configured_and_enabled(obj):
         message = 'Object %s cannot be pushed to OpenProject as there is no OpenProject configuration for %s.' % (obj.id, to_str_typed(obj))
         logger.error(message)
         log_openproject_alert(message, obj)
         return False
+
+    openproject_project = get_openproject_project(obj)
+    openproject_instance = get_openproject_instance(obj)
 
     op_issue = obj.openproject_issue
     meta = None
@@ -779,75 +769,63 @@ def update_openproject_issue(obj, *args, **kwargs):
         # BusinessError.log_to_tempfile = False
         openproject = get_openproject_connection(openproject_instance)
 
-        issue = openproject.issue(op_issue.openproject_id)
+        # issue = openproject.issue(op_issue.openproject_id)
+        work_package = WorkPackage({"id": op_issue.openproject_id})
+        wp_service = openproject.get_work_package_service()
+        wp = wp_service.find(work_package)
+        description, html_description = openproject_issue_description(obj)
+        new_wp = WorkPackage(
+            {
+                "id": wp.id, 
+                "subject": obj.title, 
+                "description": {
+                    "format": "markdown",
+                    "raw": description,
+                    "html": html_description 
+                },
+                "lockVersion": wp.lockVersion,
+                "_links":{
+                    "status": {
+                    }
+                }
+            }
+        )
+        push_status_to_openproject(obj, openproject_instance, openproject, wp, new_wp)
+        wp_service.update(new_wp)
+        # if updated:
+        #     op_issue.openproject_change = timezone.now()
+        #     op_issue.save()
 
-        fields = {}
-        # # Only update the component if it didn't exist earlier in OpenProject, this is to avoid assigning multiple components to an item
-        # if issue.fields.components:
-        #     log_openproject_alert(
-        #         "Component not updated, exists in OpenProject already. Update from OpenProject instead.",
-        #         obj)
-        # elif jira_project.component:
-        #     # Add component to the Jira issue
-        #     component = [
-        #         {
-        #             'name': jira_project.component
-        #         },
-        #     ]
-        #     fields = {"components": component}
 
-        if not meta:
-            meta = get_openproject_meta(openproject, openproject_project)
+        # # Upload dojo finding screenshots to OpenProject
+        # findings = [obj]
+        # if type(obj) == Finding_Group:
+        #     findings = obj.findings.all()
 
-        labels = get_labels(obj)
-        tags = get_tags(obj)
-        openproject_labels = labels + tags
-        if openproject_labels:
-            if 'labels' in meta['projects'][0]['issuetypes'][0]['fields']:
-                fields['labels'] = openproject_labels
+        # for find in findings:
+        #     for pic in get_file_images(find):
+        #         # It doesn't look like the celery cotainer has anything in the media
+        #         # folder. Has this feature ever worked?
+        #         try:
+        #             openproject_attachment(
+        #                 find, openproject, issue,
+        #                 settings.MEDIA_ROOT + '/' + pic)
+        #         except FileNotFoundError as e:
+        #             logger.info(e)
 
-        if 'environment' in meta['projects'][0]['issuetypes'][0]['fields']:
-            fields['environment'] = openproject_environment(obj)
-
-        logger.debug('sending fields to OpenProject: %s', fields)
-
-        issue.update(
-            summary=openproject_summary(obj),
-            description=openproject_description(obj),
-            priority={'name': openproject_priority(obj)},
-            fields=fields)
-
-        push_status_to_openproject(obj, openproject_instance, openproject, issue)
-
-        # Upload dojo finding screenshots to OpenProject
-        findings = [obj]
-        if type(obj) == Finding_Group:
-            findings = obj.findings.all()
-
-        for find in findings:
-            for pic in get_file_images(find):
-                # It doesn't look like the celery cotainer has anything in the media
-                # folder. Has this feature ever worked?
-                try:
-                    openproject_attachment(
-                        find, openproject, issue,
-                        settings.MEDIA_ROOT + '/' + pic)
-                except FileNotFoundError as e:
-                    logger.info(e)
-
-        if openproject_project.enable_engagement_epic_mapping:
-            eng = find.test.engagement
-            logger.debug('Adding to EPIC Map: %s', eng.name)
-            epic = get_openproject_issue(eng)
-            if epic:
-                add_issues_to_epic(openproject, obj, epic_id=epic.openproject_id, issue_keys=[str(op_issue.openproject_id)], ignore_epics=True)
-            else:
-                logger.info('The following EPIC does not exist: %s', eng.name)
+        # if openproject_project.enable_engagement_epic_mapping:
+        #     eng = find.test.engagement
+        #     logger.debug('Adding to EPIC Map: %s', eng.name)
+        #     epic = get_openproject_issue(eng)
+        #     if epic:
+        #         add_issues_to_epic(openproject, obj, epic_id=epic.openproject_id, issue_keys=[str(op_issue.openproject_id)], ignore_epics=True)
+        #     else:
+        #         logger.info('The following EPIC does not exist: %s', eng.name)
 
         op_issue.openproject_change = timezone.now()
         op_issue.save()
 
-        logger.debug('Updated the following linked OpenProject issue for %d:%s', find.id, find.title)
+        logger.debug('Updated the following linked OpenProject issue for %d:%s', obj.id, obj.title)
         return True
 
     except BusinessError as e:
@@ -890,58 +868,45 @@ def update_openproject_issue(obj, *args, **kwargs):
 
 
 def issue_from_openproject_is_active(issue_from_openproject):
-    #         "resolution":{
-    #             "self":"http://www.testjira.com/rest/api/2/resolution/11",
-    #             "id":"11",
-    #             "description":"Cancelled by the customer.",
-    #             "name":"Cancelled"
-    #         },
-
-    # or
-    #         "resolution": null
-
-    # or
-    #         "resolution": "None"
-
-    if not hasattr(issue_from_openproject.fields, 'resolution'):
-        print(vars(issue_from_openproject))
+    status = issue_from_openproject._embedded['status']
+    if  'isClosed' not in status:
         return True
 
-    if not issue_from_openproject.fields.resolution:
-        return True
+    if status['isClosed'] == "True":
+        return False
 
-    if issue_from_openproject.fields.resolution == "None":
-        return True
+    if status['isClosed']:
+        return False
 
-    # some kind of resolution is present that is not null or None
-    return False
+    return True
 
 
-def push_status_to_openproject(obj, openproject_instance, openproject, issue, save=False):
+def push_status_to_openproject(obj, openproject_instance, openproject,  old_wp, new_wp, save=False):
     status_list = obj.status()
     issue_closed = False
+    op_issue = obj.openproject_issue
+
     # check RESOLVED_STATUS first to avoid corner cases with findings that are Inactive, but verified
     if any(item in status_list for item in RESOLVED_STATUS):
-        if issue_from_openproject_is_active(issue):
-            logger.debug('Transitioning OpenProject issue to Resolved')
-            updated = openproject_transition(openproject, issue, openproject_instance.close_status_key)
+        if issue_from_openproject_is_active(old_wp):
+            logger.debug(f'Transitioning OpenProject issue status to Resolved: {old_wp}')
+            new_wp._links['status']['href'] = f'/api/v3/statuses/{openproject_instance.close_status_key}'
+            updated = True
         else:
-            logger.debug('Jira issue already Resolved')
+            logger.debug(f'Openproject issue already Resolved: {op_issue.openproject_id}')
             updated = False
         issue_closed = True
 
     if not issue_closed and any(item in status_list for item in OPEN_STATUS):
-        if not issue_from_openproject_is_active(issue):
+        if not issue_from_openproject_is_active(old_wp):
             logger.debug('Transitioning OpenProject issue to Active (Reopen)')
-            updated = openproject_transition(openproject, issue, openproject_instance.open_status_key)
+            new_wp._links['status']['href'] = f'/api/v3/statuses/{openproject_instance.open_status_key}'
+            updated = True
         else:
-            logger.debug('OpenProject issue already Active')
+            logger.debug(f'OpenProject issue already Active: {op_issue.openproject_id}')
             updated = False
 
-    if updated and save:
-        obj.openproject_issue.openproject_change = timezone.now()
-        obj.openproject_issue.save()
-
+    return updated and save
 
 def get_op_issue_type_key(op, openproject_project):
     return list(filter(
@@ -949,9 +914,13 @@ def get_op_issue_type_key(op, openproject_project):
         op.get_type_service().find_all()))[0].id
 
 def get_op_issue_priority_key(op, openproject_project, priority):
-    return list(filter(
+    result = list(filter(
         lambda t: t.name==priority,
-        op.get_priority_service().find_all()))[0].id
+        op.get_priority_service().find_all()))
+    if len(result) > 0:
+        return result[0].id
+    else:
+        return BusinessError(f"Bad Openproject priority key: {priority}")
 
 
 # gets the metadata for the default issue type in this openproject project
@@ -1037,46 +1006,46 @@ def openproject_check_attachment(issue, source_file_name):
     return file_exists
 
 
-# @dojo_model_to_id
-# @dojo_async_task
-# @app.task
-# @dojo_model_from_id(model=Engagement)
-# def close_epic(eng, push_to_jira, **kwargs):
-#     engagement = eng
-#     if not is_jira_enabled():
-#         return False
+@dojo_model_to_id
+@dojo_async_task
+@app.task
+@dojo_model_from_id(model=Engagement)
+def close_epic(eng, push_to_jira, **kwargs):
+    engagement = eng
+    if not is_openproject_enabled():
+        return False
 
-#     if not is_jira_configured_and_enabled(engagement):
-#         return False
+    if not is_openproject_configured_and_enabled(engagement):
+        return False
 
-#     jira_project = get_jira_project(engagement)
-#     jira_instance = get_jira_instance(engagement)
-#     if jira_project.enable_engagement_epic_mapping:
-#         if push_to_jira:
-#             try:
-#                 jissue = get_jira_issue(eng)
-#                 if jissue is None:
-#                     logger.warn("JIRA close epic failed: no issue found")
-#                     return False
+    openproject_project = get_openproject_project(engagement)
+    openproject_instance = get_openproject_instance(engagement)
+    if openproject_project.enable_engagement_epic_mapping:
+        if push_to_openproject:
+            try:
+                op_issue = get_openproject_issue(eng)
+                if op_issue is None:
+                    logger.warn("OpenProject close epic failed: no issue found")
+                    return False
 
-#                 req_url = jira_instance.url + '/rest/api/latest/issue/' + \
-#                     jissue.jira_id + '/transitions'
-#                 json_data = {'transition': {'id': jira_instance.close_status_key}}
-#                 r = requests.post(
-#                     url=req_url,
-#                     auth=HTTPBasicAuth(jira_instance.username, jira_instance.password),
-#                     json=json_data)
-#                 if r.status_code != 204:
-#                     logger.warn("JIRA close epic failed with error: {}".format(r.text))
-#                     return False
-#                 return True
-#             except JIRAError as e:
-#                 logger.exception(e)
-#                 log_jira_generic_alert('Jira Engagement/Epic Close Error', str(e))
-#                 return False
-#     else:
-#         add_error_message_to_response('Push to JIRA for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
-#         return False
+                req_url = openproject_instance.url + '/rest/api/latest/issue/' + \
+                    op_issue.jira_id + '/transitions'
+                json_data = {'transition': {'id': openproject_instance.close_status_key}}
+                r = requests.post(
+                    url=req_url,
+                    auth=HTTPBasicAuth(openproject_instance.username, openproject_instance.password),
+                    json=json_data)
+                if r.status_code != 204:
+                    logger.warn("OpenProject close epic failed with error: {}".format(r.text))
+                    return False
+                return True
+            except BusinessError as e:
+                logger.exception(e)
+                log_openproject_generic_alert('OpenProject Engagement/Epic Close Error', str(e))
+                return False
+    else:
+        add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
+        return False
 
 
 @dojo_model_to_id
@@ -1089,8 +1058,6 @@ def update_epic(engagement, **kwargs):
     if not is_openproject_configured_and_enabled(engagement):
         return False
 
-    logger.debug('config found')
-
     openproject_project = get_openproject_project(engagement)
     openproject_instance = get_openproject_instance(engagement)
     if openproject_project.enable_engagement_epic_mapping:
@@ -1099,20 +1066,26 @@ def update_epic(engagement, **kwargs):
             op_issue = get_openproject_issue(engagement)
             work_package = WorkPackage({"id": op_issue.openproject_id})
             wp_service = openproject.get_work_package_service()
-            wp = wp_service.find(work_package)
-            new_wp = WorkPackage(
-                {
-                    "id": wp.id, 
-                    "subject": engagement.name, 
-                    "description": {
-                        "format": "markdown",
-                        "raw": engagement.description,
-                        "html": f'<p>{engagement.description}</p>' 
-                    },
-                    "lockVersion": wp.lockVersion
-                }
-            )
-            wp_service.update(new_wp)
+            try:
+                wp = wp_service.find(work_package)
+                new_wp = WorkPackage(
+                    {
+                        "id": wp.id, 
+                        "subject": engagement.name, 
+                        "description": {
+                            "format": "markdown",
+                            "raw": engagement.description,
+                            "html": f'<p>{engagement.description}</p>' 
+                        },
+                        "lockVersion": wp.lockVersion
+                    }
+                )
+                wp_service.update(new_wp)
+            except BusinessError as e:
+                new_epic = op_add_epic(engagement)
+                op_issue.openproject_id = new_epic.id
+                op_issue.save()
+
             return True
         except BusinessError as e:
             logger.exception(e)
@@ -1123,6 +1096,26 @@ def update_epic(engagement, **kwargs):
         return False
 
 
+def op_add_epic(engagement):
+    new_epic = None
+    openproject_project = get_openproject_project(engagement)
+    openproject_instance = get_openproject_instance(engagement)
+    if openproject_project.enable_engagement_epic_mapping:
+        openproject = get_openproject_connection(openproject_instance)
+        logger.debug('add_epic: %s', engagement.name)
+        op_project_service = openproject.get_project_service()
+        op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
+        wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
+        wp = WorkPackage(wp_form._embedded["payload"])            
+        wp.subject = engagement.name
+        wp.description["format"] = 'markdown'
+        wp.description["raw"]= engagement.description
+        wp.description["html"] = f'<p>{engagement.description}</p>'
+        wp._links["type"]["href"] = f'/api/v3/types/{openproject_instance.epic_name_id}'
+        wp._links["type"]["title"] = 'Epic'
+        new_epic = op_project_service.create_work_package(op_project, wp)
+    return new_epic
+    
 @dojo_model_to_id
 @dojo_async_task
 @app.task
@@ -1133,44 +1126,28 @@ def add_epic(engagement, **kwargs):
     if not is_openproject_configured_and_enabled(engagement):
         return False
 
-    logger.debug('config found')
-
-    openproject_project = get_openproject_project(engagement)
     openproject_instance = get_openproject_instance(engagement)
-    if openproject_project.enable_engagement_epic_mapping:
-        try:
-            openproject = get_openproject_connection(openproject_instance)
-            logger.debug('add_epic: %s', engagement.name)
-            op_project_service = openproject.get_project_service()
-            op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
-            wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
-            wp = WorkPackage(wp_form._embedded["payload"])            
-            wp.subject = engagement.name
-            wp.description["format"] = 'markdown'
-            wp.description["raw"]= engagement.description
-            wp.description["html"] = f'<p>{engagement.description}</p>'
-            wp._links["type"]["href"] = f'/api/v3/types/{openproject_instance.epic_name_id}'
-            wp._links["type"]["title"] = 'Epic'
-            new_wp = op_project_service.create_work_package(op_project, wp)
-
+    openproject_project = get_openproject_project(engagement)
+    try:
+        new_epic = op_add_epic(engagement)
+        if new_epic:    
             op_issue = OpenProject_Issue(
-                openproject_id=new_wp.id,
+                openproject_id=new_epic.id,
                 engagement=engagement,
                 openproject_project=openproject_project)
 
             op_issue.save()
             return True
-        except BusinessError as e:
-            logger.exception(e)
-            error = str(e)
-            message = "The 'Project key ' or 'Epic name id' in your DefectDojo OpenProject Configuration does not appear to be correct. Please visit, " + openproject_instance.url + \
-                "/api/v3/types and search for Epic Name. Copy the number out of type['id'] and place in your DefectDojo settings for OpenProject and try again) \n\n"
-
-            log_openproject_generic_alert('OpenProject Engagement/Epic Creation Error',
-                                   message + error)
+        else:
+            add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
             return False
-    else:
-        add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
+    except BusinessError as e:
+        logger.exception(e)
+        error = str(e)
+        message = "The 'Project key ' or 'Epic name id' in your DefectDojo OpenProject Configuration does not appear to be correct. Please visit, " + openproject_instance.url + \
+            "/api/v3/types and search for Epic Name. Copy the number out of type['id'] and place in your DefectDojo settings for OpenProject and try again) \n\n"
+
+        log_openproject_generic_alert('OpenProject Engagement/Epic Creation Error', message + error)
         return False
 
 
@@ -1261,16 +1238,16 @@ def add_comment(obj, note, force_push=False, **kwargs):
 #     return True
 
 
-# def finding_unlink_jira(request, finding):
-#     return unlink_jira(request, finding)
+def finding_unlink_openproject(request, finding):
+    return unlink_openproject(request, finding)
 
 
-# def unlink_jira(request, obj):
-#     logger.debug('removing linked jira issue %s for %i:%s', obj.jira_issue.jira_key, obj.id, to_str_typed(obj))
-#     obj.jira_issue.delete()
-#     # finding.save(push_to_jira=False, dedupe_option=False, issue_updater_option=False)
-#     # jira_issue_url = get_jira_url(finding)
-#     return True
+def unlink_openproject(request, obj):
+    logger.debug('removing linked OpenProject issue %s for %i:%s', obj.openproject_issue.openproject_id, obj.id, to_str_typed(obj))
+    obj.openproject_issue.delete()
+    # finding.save(push_to_openproject=False, dedupe_option=False, issue_updater_option=False)
+    # openproject_issue_url = get_openproject_url(finding)
+    return True
 
 
 # return True if no errors

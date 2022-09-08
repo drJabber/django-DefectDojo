@@ -26,7 +26,7 @@ from dojo.models import Finding, Finding_Group, Product_Type, Product, Note_Type
     Check_List, SLA_Configuration, User, Engagement, Test, Test_Type, Notes, Risk_Acceptance, \
     Development_Environment, Dojo_User, Endpoint, Stub_Finding, Finding_Template, \
     JIRA_Issue, JIRA_Project, JIRA_Instance, OpenProject_Instance, GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
-    OpenProject_Project, \
+    OpenProject_Project, OpenProject_Issue, \
     Tool_Configuration, Tool_Product_Settings, Cred_User, Cred_Mapping, System_Settings, Notifications, \
     App_Analysis, Objects_Product, Benchmark_Product, Benchmark_Requirement, \
     Benchmark_Product_Summary, Rule, Child_Rule, Engagement_Presets, DojoMeta, \
@@ -1252,7 +1252,7 @@ class FindingForm(forms.ModelForm):
     class Meta:
         model = Finding
         exclude = ('reporter', 'url', 'numerical_severity', 'under_review', 'reviewers', 'cve',
-                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'sonarqube_issue', 'endpoint_status')
+                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 'sonarqube_issue', 'endpoint_status')
 
 
 class StubFindingForm(forms.ModelForm):
@@ -1366,7 +1366,9 @@ class FindingBulkUpdateForm(forms.ModelForm):
     finding_group_by_option = forms.CharField(required=False)
 
     push_to_jira = forms.BooleanField(required=False)
+    push_to_openproject = forms.BooleanField(required=False)
     # unlink_from_jira = forms.BooleanField(required=False)
+    # unlink_from_openproject = forms.BooleanField(required=False)
     push_to_github = forms.BooleanField(required=False)
     tags = TagField(required=False, autocomplete_tags=Finding.tags.tag_model.objects.all().order_by('name'))
     notes = forms.CharField(required=False, max_length=1024, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -2204,7 +2206,15 @@ def get_openproject_issue_template_dir_choices():
     logger.debug('templates: %s', template_dir_list)
     return template_dir_list
 
+
 OPENPROJECT_TEMPLATE_CHOICES = sorted(get_openproject_issue_template_dir_choices())
+
+class OpenProject_IssueForm(forms.ModelForm):
+
+    class Meta:
+        model = OpenProject_Issue
+        exclude = ['product']
+
 
 class OpenProjectForm(forms.ModelForm):
     issue_template_dir = forms.ChoiceField(required=False,
@@ -2947,6 +2957,121 @@ class JIRAFindingForm(forms.Form):
                     regex=r'^[A-Z][A-Z_0-9]+-\d+$',
                     message='JIRA issue key must be in XXXX-nnnn format ([A-Z][A-Z_0-9]+-\\d+)')])
     push_to_jira = forms.BooleanField(required=False, label="Push to JIRA")
+
+
+class OpenProjectFindingForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        self.push_all = kwargs.pop('push_all', False)
+        self.instance = kwargs.pop('instance', None)
+        self.openproject_project = kwargs.pop('openproject_project', None)
+        # we provide the finding_form from the same page so we can add validation errors
+        # if the finding doesn't satisfy the rules to be pushed to openproject
+        self.finding_form = kwargs.pop('finding_form', None)
+
+        if self.instance is None and self.openproject_project is None:
+            raise ValueError('either and finding instance or openproject_project is needed')
+
+        super(OpenProjectFindingForm, self).__init__(*args, **kwargs)
+        self.fields['push_to_openproject'] = forms.BooleanField()
+        self.fields['push_to_openproject'].required = False
+        if is_finding_groups_enabled():
+            self.fields['push_to_openproject'].help_text = "Checking this will overwrite content of your OpenProject issue, or create one. If this finding is part of a Finding Group, the group will pushed instead of the finding."
+        else:
+            self.fields['push_to_openproject'].help_text = "Checking this will overwrite content of your OpenProject issue, or create one."
+
+        self.fields['push_to_openproject'].label = "Push to OpenProject"
+        if self.push_all:
+            # This will show the checkbox as checked and greyed out, this way the user is aware
+            # that issues will be pushed to OpenProject, given their product-level settings.
+            self.fields['push_to_openproject'].help_text = \
+                "Push all issues is enabled on this product. If you do not wish to push all issues" \
+                " to OpenProject, please disable Push all issues on this product."
+            self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+            self.fields['push_to_openproject'].disabled = True
+
+        if self.instance:
+            if hasattr(self.instance, 'has_openproject_issue') and self.instance.has_openproject_issue:
+                self.initial['openproject_issue'] = self.instance.openproject_issue.openproject_id
+                self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+        if is_finding_groups_enabled():
+            self.fields['openproject_issue'].widget = forms.TextInput(attrs={'placeholder': 'Leave empty and check push to openproject to create a new OpenProject issue for this finding, or the group this finding is in.'})
+        else:
+            self.fields['openproject_issue'].widget = forms.TextInput(attrs={'placeholder': 'Leave empty and check push to openproject to create a new OpenProject issue for this finding.'})
+
+        if self.instance and self.instance.has_openproject_group_issue:
+            self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+            self.fields['openproject_issue'].help_text = 'Changing the linked OpenProject issue for finding groups is not (yet) supported.'
+            self.initial['openproject_issue'] = self.instance.finding_group.openproject_issue.openproject_id
+            self.fields['openproject_issue'].disabled = True
+
+    def clean(self):
+        logger.debug('opform clean')
+        import dojo.openproject_link.helper as openproject_helper
+
+        cleaned_data = super(OpenProjectFindingForm, self).clean()
+        openproject_issue_key_new = self.cleaned_data.get('openproject_issue')
+
+        finding = self.instance
+        openproject_project = self.openproject_project
+
+        logger.debug('self.cleaned_data.push_to_openproject: %s', self.cleaned_data.get('push_to_openproject', None))
+
+        if self.cleaned_data.get('push_to_openproject', None) and finding.has_openproject_group_issue:
+            can_be_pushed_to_openproject, error_message, error_code = openproject_helper.can_be_pushed_to_openproject(self.instance.finding_group, self.finding_form)
+            if not can_be_pushed_to_openproject:
+                self.add_error('push_to_openproject', ValidationError(error_message, code=error_code))
+                # for field in error_fields:
+                #     self.finding_form.add_error(field, error)
+
+        elif self.cleaned_data.get('push_to_openproject', None):
+            can_be_pushed_to_openproject, error_message, error_code = openproject_helper.can_be_pushed_to_openproject(self.instance, self.finding_form)
+            if not can_be_pushed_to_openproject:
+                self.add_error('push_to_openproject', ValidationError(error_message, code=error_code))
+                # for field in error_fields:
+                #     self.finding_form.add_error(field, error)
+
+        if openproject_issue_key_new and (not finding or not finding.has_openproject_group_issue):
+            # when there is a group openproject issue, we skip all the linking/unlinking as this is not supported (yet)
+            if finding:
+                # in theory there can multiple openproject instances that have similar projects
+                # so checking by only the openproject issue key can lead to false positives
+                # so we check also the openproject internal id of the openproject issue
+                # if the key and id are equal, it is probably the same openproject instance and the same issue
+                # the database model is lacking some relations to also include the openproject config name or url here
+                # and I don't want to change too much now. this should cover most usecases.
+
+                openproject_issue_need_to_exist = False
+                # changing openproject link on finding
+                if finding.has_openproject_issue and openproject_issue_key_new != finding.openproject_issue.openproject_id:
+                    openproject_issue_need_to_exist = True
+
+                # adding existing openproject issue to finding without openproject link
+                if not finding.has_openproject_issue:
+                    openproject_issue_need_to_exist = True
+
+            else:
+                openproject_issue_need_to_exist = True
+
+            if openproject_issue_need_to_exist:
+                openproject_issue_new = openproject_helper.openproject_get_issue(openproject_project, openproject_issue_key_new)
+                if not openproject_issue_new:
+                    raise ValidationError('OpenProject issue ' + openproject_issue_key_new + ' does not exist or cannot be retrieved')
+
+                logger.debug('checking if provided openproject issue id already is linked to another finding')
+                openproject_issues = OpenProject_Issue.objects.filter(openproject_id=openproject_issue_new.id).exclude(engagement__isnull=False)
+
+                if self.instance:
+                    # just be sure we exclude the finding that is being edited
+                    openproject_issues = openproject_issues.exclude(finding=finding)
+
+                if len(openproject_issues) > 0:
+                    raise ValidationError('OpenProject issue ' + openproject_issue_key_new + ' already linked to ' + reverse('view_finding', args=(openproject_issues[0].finding_id,)))
+
+    openproject_issue = forms.CharField(required=False, label="Linked OpenProject Issue",
+                validators=[validators.RegexValidator(
+                    regex=r'\d+$',
+                    message='OpenProject issue key must be in NNNN format (regex \\d+)')])
+    push_to_openproject = forms.BooleanField(required=False, label="Push to OpenProject")
 
 
 class JIRAImportScanForm(forms.Form):

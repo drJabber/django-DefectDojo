@@ -26,7 +26,9 @@ from dojo.utils import add_error_message_to_response, add_field_errors_to_respon
 import copy
 from dojo.filters import TemplateFindingFilter, SimilarFindingFilter, FindingFilter, AcceptedFindingFilter
 from dojo.forms import NoteForm, TypedNoteForm, CloseFindingForm, FindingForm, PromoteFindingForm, FindingTemplateForm, \
-    DeleteFindingTemplateForm, JIRAFindingForm, GITHUBFindingForm, ReviewFindingForm, ClearFindingReviewForm, \
+    DeleteFindingTemplateForm, \
+    JIRAFindingForm, OpenProjectFindingForm, \
+    GITHUBFindingForm, ReviewFindingForm, ClearFindingReviewForm, \
     DefectFindingForm, StubFindingForm, DeleteFindingForm, DeleteStubFindingForm, ApplyFindingTemplateForm, \
     FindingFormID, FindingBulkUpdateForm, MergeFindings, CopyFindingForm
 from dojo.models import IMPORT_UNTOUCHED_FINDING, Finding, Finding_Group, Notes, NoteHistory, Note_Type, \
@@ -42,6 +44,7 @@ from django.template.defaultfilters import pluralize
 from django.db.models import Q, QuerySet, Count
 from django.db.models.query import Prefetch
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import dojo.risk_acceptance.helper as ra_helper
 import dojo.finding.helper as finding_helper
 from dojo.authorization.authorization import user_has_permission_or_403
@@ -123,6 +126,7 @@ def findings(request, pid=None, eid=None, view=None, filter_name=None, order_by=
     custom_breadcrumb = None
     product_tab = None
     jira_project = None
+    openproject_project = None
     github_config = None
 
     if view == "All":
@@ -136,6 +140,7 @@ def findings(request, pid=None, eid=None, view=None, filter_name=None, order_by=
         show_product_column = False
         product_tab = Product_Tab(product, title="Findings", tab="findings")
         jira_project = jira_helper.get_jira_project(product)
+        openproject_project = openproject_helper.get_openproject_project(product)
         github_config = GITHUB_PKey.objects.filter(product=pid).first()
 
     elif eid:
@@ -144,6 +149,7 @@ def findings(request, pid=None, eid=None, view=None, filter_name=None, order_by=
         show_product_column = False
         product_tab = Product_Tab(engagement.product, title=engagement.name, tab="engagements")
         jira_project = jira_helper.get_jira_project(engagement)
+        openproject_project = openproject_helper.get_openproject_project(engagement)
         github_config = GITHUB_PKey.objects.filter(product__engagement=eid).first()
     else:
         add_breadcrumb(title="Findings", top_level=not len(request.GET), request=request)
@@ -185,6 +191,7 @@ def findings(request, pid=None, eid=None, view=None, filter_name=None, order_by=
             'custom_breadcrumb': custom_breadcrumb,
             'filter_name': filter_name,
             'jira_project': jira_project,
+            'openproject_project': openproject_project,
             'bulk_edit_form': bulk_edit_form,
         })
 
@@ -194,9 +201,12 @@ def prefetch_for_findings(findings, prefetch_type='all'):
     if isinstance(findings, QuerySet):  # old code can arrive here with prods being a list because the query was already executed
         prefetched_findings = prefetched_findings.prefetch_related('reporter')
         prefetched_findings = prefetched_findings.prefetch_related('jira_issue__jira_project__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('openproject_issue__openproject_project__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__test_type')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__jira_project__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__openproject_project__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__jira_project_set__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__openproject_project_set__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('found_by')
 
         # for open/active findings the following 4 prefetches are not needed
@@ -233,9 +243,12 @@ def prefetch_for_similar_findings(findings):
     if isinstance(findings, QuerySet):  # old code can arrive here with prods being a list because the query was already executed
         prefetched_findings = prefetched_findings.prefetch_related('reporter')
         prefetched_findings = prefetched_findings.prefetch_related('jira_issue__jira_project__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('openproject_issue__openproject_project__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__test_type')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__jira_project__jira_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__jira_project_set__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__openroject_project__openroject_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__openroject_project_set__openroject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('found_by')
         prefetched_findings = prefetched_findings.prefetch_related('risk_acceptance_set')
         prefetched_findings = prefetched_findings.prefetch_related('risk_acceptance_set__accepted_findings')
@@ -322,6 +335,11 @@ def view_finding(request, fid):
             elif finding.has_jira_group_issue:
                 jira_helper.add_comment(finding.finding_group, new_note)
 
+            if finding.has_openproject_issue:
+                openproject_helper.add_comment(finding, new_note)
+            elif finding.has_openproject_group_issue:
+                openproject_helper.add_comment(finding.finding_group, new_note)
+
             if note_type_activation:
                 form = TypedNoteForm(available_note_types=available_note_types)
             else:
@@ -370,6 +388,7 @@ def view_finding(request, fid):
     product_tab = Product_Tab(finding.test.engagement.product, title="View Finding", tab="findings")
 
     can_be_pushed_to_jira, can_be_pushed_to_jira_error, error_code = jira_helper.can_be_pushed_to_jira(finding)
+    can_be_pushed_to_openproject, can_be_pushed_to_openproject_error, error_code = openproject_helper.can_be_pushed_to_openproject(finding)
 
     lastPos = (len(findings)) - 1
     return render(
@@ -397,6 +416,8 @@ def view_finding(request, fid):
             'similar_findings_filter': similar_findings_filter,
             'can_be_pushed_to_jira': can_be_pushed_to_jira,
             'can_be_pushed_to_jira_error': can_be_pushed_to_jira_error,
+            'can_be_pushed_to_openproject': can_be_pushed_to_openproject,
+            'can_be_pushed_to_openproject_error': can_be_pushed_to_openproject_error,
         })
 
 
@@ -449,6 +470,12 @@ def close_finding(request, fid):
                 # only push to JIRA if there is an issue, to prevent a new one from being created
                 if jira_helper.is_push_all_issues(finding) and finding.has_jira_issue:
                     finding.save(push_to_jira=True)
+                else:
+                    finding.save()
+
+                # only push to OpenProject if there is an issue, to prevent a new one from being created
+                if openproject_helper.is_push_all_issues(finding) and finding.has_openproject_issue:
+                    finding.save(push_to_openproject=True)
                 else:
                     finding.save()
 
@@ -541,6 +568,36 @@ def defect_finding_review(request, fid):
             elif finding.has_jira_group_issue:
                 jira_helper.add_comment(finding.finding_group, new_note, force_push=True)
 
+            # TODO: OpenProject: Code below should move to openproject_helper. But I have no idea what it is doin so don't want move/break it
+
+            openproject = openproject_helper.get_openproject_connection(finding)
+            if openproject and finding.has_openproject_issue:
+                j_issue = finding.openproject_issue
+                issue = openproject.issue(j_issue.openproject_id)
+
+                if defect_choice == "Close Finding":
+                    # If the issue id is closed openproject will return Reopen Issue
+                    resolution_id = openproject_helper.openproject_get_resolution_id(openproject, issue,
+                                                           "Reopen Issue")
+                    if resolution_id is None:
+                        resolution_id = openproject_helper.openproject_get_resolution_id(
+                            openproject, issue, "Resolve Issue")
+                        openproject_helper.openproject_transition(openproject, issue, resolution_id)
+                        new_note.entry = new_note.entry + "\nOpenProject issue set to resolved."
+                else:
+                    # Re-open finding with notes stating why re-open
+                    resolution_id = openproject_helper.openproject_get_resolution_id(openproject, issue,
+                                                        "Resolve Issue")
+                    if resolution_id is not None:
+                        openproject_helper.openproject_transition(openproject, issue, resolution_id)
+                        new_note.entry = new_note.entry + "\nOpenProject issue re-opened."
+
+            # Update Dojo and OpenProject with a notes
+            if finding.has_openproject_issue:
+                openproject_helper.add_comment(finding, new_note, force_push=True)
+            elif finding.has_openproject_group_issue:
+                openproject_helper.add_comment(finding.finding_group, new_note, force_push=True)
+
             finding.save()
 
             messages.add_message(
@@ -554,7 +611,7 @@ def defect_finding_review(request, fid):
     else:
         form = DefectFindingForm()
 
-    product_tab = Product_Tab(finding.test.engagement.product, title="Jira Status Review", tab="findings")
+    product_tab = Product_Tab(finding.test.engagement.product, title="Jira/OpenProject Status Review", tab="findings")
 
     return render(request, 'dojo/defect_finding_review.html', {
         'finding': finding,
@@ -584,6 +641,12 @@ def reopen_finding(request, fid):
     # only push to JIRA if there is an issue, otherwise a new one is created
     if jira_helper.is_push_all_issues(finding) and finding.has_jira_issue:
         finding.save(push_to_jira=True)
+    else:
+        finding.save()
+
+    # only push to OpenProject if there is an issue, otherwise a new one is created
+    if openproject_helper.is_push_all_issues(finding) and finding.has_openproject_issue:
+        finding.save(push_to_openproject=True)
     else:
         finding.save()
 
@@ -730,9 +793,13 @@ def edit_finding(request, fid):
     form_error = False
     jform = None
     push_all_jira_issues = jira_helper.is_push_all_issues(finding)
-    gform = None
     use_jira = jira_helper.get_jira_project(finding) is not None
 
+    opform = None
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(finding)
+    use_openproject = openproject_helper.get_openproject_project(finding) is not None
+
+    gform = None
     github_enabled = finding.has_github_issue()
 
     if request.method == 'POST':
@@ -762,10 +829,17 @@ def edit_finding(request, fid):
         if use_jira:
             jform = JIRAFindingForm(request.POST, prefix='jiraform', push_all=push_all_jira_issues, instance=finding, jira_project=jira_helper.get_jira_project(finding), finding_form=form)
 
-        if form.is_valid() and (jform is None or jform.is_valid()):
+        if use_openproject:
+            opform = OpenProjectFindingForm(request.POST, prefix='openprojectform', push_all=push_all_openproject_issues, instance=finding, openproject_project=openproject_helper.get_openproject_project(finding), finding_form=form)
+
+        if form.is_valid() and (jform is None or jform.is_valid()) and (opform is None or opform.is_valid()):
             if jform:
                 logger.debug('jform.jira_issue: %s', jform.cleaned_data.get('jira_issue'))
                 logger.debug('jform.push_to_jira: %s', jform.cleaned_data.get('push_to_jira'))
+
+            if opform:
+                logger.debug('opform.openproject_issue: %s', opform.cleaned_data.get('openproject_issue'))
+                logger.debug('opform.push_to_openproject: %s', opform.cleaned_data.get('push_to_openproject'))
 
             new_finding = form.save(commit=False)
             new_finding.test = finding.test
@@ -844,6 +918,45 @@ def edit_finding(request, fid):
                             jira_helper.finding_link_jira(request, new_finding, new_jira_issue_key)
                             jira_message = 'Linked a JIRA issue successfully.'
 
+            push_to_openproject = False
+            openproject_message = None
+            if opform and opform.is_valid():
+                # Push to OpenProject?
+
+                logger.debug('opform.push_to_openproject: %s', opform.cleaned_data.get('push_to_openproject'))
+                # can't use helper as when push_all_openproject_issues is True, the checkbox gets disabled and is always false
+                # push_to_openproject = openproject_helper.is_push_to_openproject(new_finding, opform.cleaned_data.get('push_to_openproject'))
+                push_to_openproject = push_all_openproject_issues or opform.cleaned_data.get('push_to_openproject')
+
+                logger.debug('push_to_openproject: %s', push_to_openproject)
+                logger.debug('push_all_openproject_issues: %s', push_all_openproject_issues)
+                logger.debug('has_openproject_group_issue: %s', new_finding.has_openproject_group_issue)
+
+                # if the openproject issue key was changed, update database
+                new_openproject_issue_key = opform.cleaned_data.get('openproject_issue')
+                # we only support linking / changing if there is no group issue
+                if not new_finding.has_openproject_group_issue:
+                    if new_finding.has_openproject_issue:
+                        openproject_issue = new_finding.openproject_issue
+
+                        # everything in DD around openproject integration is based on the internal id of the issue in openproject
+                        # instead of on the public openproject issue key.
+                        # I have no idea why, but it means we have to retrieve the issue from openproject to get the internal openproject id.
+                        # we can assume the issue exist, which is already checked in the validation of the opform
+
+                        if not new_openproject_issue_key:
+                            openproject_helper.finding_unlink_openproject(request, new_finding)
+                            openproject_message = 'Link to OpenProject issue removed successfully.'
+
+                        elif new_openproject_issue_key != new_finding.openproject_issue.openproject_id:
+                            openproject_helper.finding_unlink_openproject(request, new_finding)
+                            openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                            openproject_message = 'Changed OpenProject link successfully.'
+                    else:
+                        if new_openproject_issue_key:
+                            openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                            openproject_message = 'Linked a OpenProject issue successfully.'
+
             if 'githubform-push_to_github' in request.POST:
                 gform = GITHUBFindingForm(
                     request.POST, prefix='githubform', enabled=github_enabled)
@@ -858,20 +971,37 @@ def edit_finding(request, fid):
             # any existing finding should be updated
             push_to_jira = push_to_jira and not push_group_to_jira and not new_finding.has_jira_issue
 
+            # if there's a finding group, that's what we need to push
+            push_group_to_openproject = push_to_openproject and new_finding.finding_group
+            # any existing finding should be updated
+            push_to_openproject = push_to_openproject and not push_group_to_openproject 
+
             finding_helper.save_vulnerability_ids(new_finding, form.cleaned_data['vulnerability_ids'].split())
 
+            logger.debug('has_openproject_issue: %s', new_finding.has_openproject_issue)
+            logger.debug('openproject_issue: %s', new_finding.openproject_issue)
+            logger.debug('new_openproject_issue_key: %s', new_openproject_issue_key)
+            logger.debug('old_openproject_issue_key: %s', new_finding.openproject_issue.openproject_id)
+            logger.debug('push_group_to_openproject: %s', push_group_to_openproject)
+            logger.debug('push_to_openproject: %s', push_to_openproject)
+
             # if we're removing the "duplicate" in the edit finding screen
-            # do not relaunch deduplication, otherwise, it's never taken into account
+            # do not relaunch deduplication, otherwise, it's never taken into account                        
             if old_finding.duplicate and not new_finding.duplicate:
                 new_finding.duplicate_finding = None
-                new_finding.save(push_to_jira=push_to_jira, dedupe_option=False)
+                new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, dedupe_option=False)
             else:
-                new_finding.save(push_to_jira=push_to_jira)
+                new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
             # we only push the group after storing the finding to make sure
             # the updated data of the finding is pushed as part of the group
             if push_group_to_jira:
                 jira_helper.push_to_jira(new_finding.finding_group)
+
+            # we only push the group after storing the finding to make sure
+            # the updated data of the finding is pushed as part of the group
+            if push_group_to_openproject:
+                openproject_helper.push_to_openproject(new_finding.finding_group)
 
             messages.add_message(
                 request,
@@ -886,15 +1016,26 @@ def edit_finding(request, fid):
                     jira_message,
                     extra_tags='alert-success')
 
+            if openproject_message:
+                messages.add_message(
+                    request,
+                    messages.SUCCESS,
+                    openproject_message,
+                    extra_tags='alert-success')
+
             return redirect_to_return_url_or_else(request, reverse('view_finding', args=(new_finding.id,)))
         else:
             add_error_message_to_response('The form has errors, please correct them below.')
             add_field_errors_to_response(jform)
+            add_field_errors_to_response(opform)
             add_field_errors_to_response(form)
             form_error = True
     else:
         if use_jira:
             jform = JIRAFindingForm(push_all=push_all_jira_issues, prefix='jiraform', instance=finding, jira_project=jira_helper.get_jira_project(finding), finding_form=form)
+
+        if use_openproject:
+            opform = OpenProjectFindingForm(push_all=push_all_openproject_issues, prefix='openprojectform', instance=finding, openproject_project=openproject_helper.get_openproject_project(finding), finding_form=form)
 
         if get_system_setting('enable_github'):
             if GITHUB_PKey.objects.filter(product=finding.test.engagement.product).exclude(git_conf_id=None):
@@ -907,6 +1048,7 @@ def edit_finding(request, fid):
         'form': form,
         'finding': finding,
         'jform': jform,
+        'opform': opform,
         'gform': gform,
         'return_url': get_return_url(request)
     })
@@ -1299,6 +1441,12 @@ def promote_to_finding(request, fid):
     push_all_jira_issues = jira_helper.is_push_all_issues(finding)
     jform = None
     use_jira = jira_helper.get_jira_project(finding) is not None
+
+    openproject_available = False
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(finding)
+    opform = None
+    use_openproject = openproject_helper.get_openproject_project(finding) is not None
+
     product_tab = Product_Tab(finding.test.engagement.product, title="Promote Finding", tab="findings")
 
     if request.method == 'POST':
@@ -1306,10 +1454,17 @@ def promote_to_finding(request, fid):
         if use_jira:
             jform = JIRAFindingForm(request.POST, instance=finding, prefix='jiraform', push_all=push_all_jira_issues, jira_project=jira_helper.get_jira_project(finding))
 
-        if form.is_valid() and (jform is None or jform.is_valid()):
+        if use_openproject:
+            opform = OpenProjectFindingForm(request.POST, instance=finding, prefix='openprojectform', push_all=push_all_openproject_issues, openproject_project=openproject_helper.get_openproject_project(finding))
+
+        if form.is_valid() and (jform is None or jform.is_valid()) and (opform is None or opform.is_valid()):
             if jform:
                 logger.debug('jform.jira_issue: %s', jform.cleaned_data.get('jira_issue'))
                 logger.debug('jform.push_to_jira: %s', jform.cleaned_data.get('push_to_jira'))
+
+            if opform:
+                logger.debug('opform.openproject_issue: %s', opform.cleaned_data.get('openproject_issue'))
+                logger.debug('opform.push_to_openproject: %s', opform.cleaned_data.get('push_to_openproject'))
 
             new_finding = form.save(commit=False)
             new_finding.test = test
@@ -1362,10 +1517,43 @@ def promote_to_finding(request, fid):
                         jira_helper.finding_link_jira(request, new_finding, new_jira_issue_key)
                         jira_message = 'Linked a JIRA issue successfully.'
 
+            # Push to openproject?
+            push_to_openproject = False
+            openproject_message = None
+            if opform and opform.is_valid():
+                # Push to openproject?
+                logger.debug('openproject form valid')
+                push_to_openproject = push_all_openproject_issues or opform.cleaned_data.get('push_to_openproject')
+
+                # if the openproject issue key was changed, update database
+                new_openproject_issue_key = opform.cleaned_data.get('openproject_issue')
+                if new_finding.has_openproject_issue:
+                    openproject_issue = new_finding.openproject_issue
+
+                    # everything in DD around openproject integration is based on the internal id of the issue in openproject
+                    # instead of on the public openproject issue key.
+                    # I have no idea why, but it means we have to retrieve the issue from openproject to get the internal openproject id.
+                    # we can assume the issue exist, which is already checked in the validation of the jform
+
+                    if not new_openproject_issue_key:
+                        openproject_helper.finding_unlink_openproject(request, new_finding)
+                        openproject_message = 'Link to OpenProject issue removed successfully.'
+
+                    elif new_openproject_issue_key != new_finding.openproject_issue.openproject_id:
+                        openproject_helper.finding_unlink_openproject(request, new_finding)
+                        openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                        openproject_message = 'Changed OpenProject link successfully.'
+                else:
+                    logger.debug('finding has no openproject issue yet')
+                    if new_openproject_issue_key:
+                        logger.debug('finding has no openproject issue yet, but openproject issue specified in request. trying to link.')
+                        openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                        openproject_message = 'Linked a openproject issue successfully.'
+
             finding_helper.save_vulnerability_ids(new_finding, form.cleaned_data['vulnerability_ids'].split())
 
-            # Save it and push it to JIRA
-            new_finding.save(push_to_jira=push_to_jira)
+            # Save it and push it to JIRA/OpenProject
+            new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
             # Delete potential finding
             finding.delete()
@@ -1389,6 +1577,7 @@ def promote_to_finding(request, fid):
             form_error = True
             add_error_message_to_response('The form has errors, please correct them below.')
             add_field_errors_to_response(jform)
+            add_field_errors_to_response(opform)
             add_field_errors_to_response(form)
     else:
 
@@ -1406,6 +1595,9 @@ def promote_to_finding(request, fid):
         if use_jira:
             jform = JIRAFindingForm(prefix='jiraform', push_all=jira_helper.is_push_all_issues(test), jira_project=jira_helper.get_jira_project(test))
 
+        if use_openproject:
+            jform = OpenProjectFindingForm(prefix='openprojectform', push_all=openproject_helper.is_push_all_issues(test), openproject_project=openproject_helper.get_openproject_project(test))
+
     return render(
         request, 'dojo/promote_to_finding.html', {
             'form': form,
@@ -1414,6 +1606,7 @@ def promote_to_finding(request, fid):
             'stub_finding': finding,
             'form_error': form_error,
             'jform': jform,
+            'opform': opform,
         })
 
 
@@ -2017,11 +2210,21 @@ def finding_bulk_update_all(request, pid=None):
                             jira_helper.push_to_jira(group)
                             success_count += 1
 
+                    if form.cleaned_data.get('push_to_openproject'):
+                        can_be_pushed_to_openproject, error_message, error_code = openproject_helper.can_be_pushed_to_openproject(group)
+                        if not can_be_pushed_to_openproject:
+                            error_counts[error_message] += 1
+                            openproject_helper.log_openproject_alert(error_message, group)
+                        else:
+                            logger.debug('pushing to openproject from finding.finding_bulk_update_all()')
+                            openproject_helper.push_to_openproject(group)
+                            success_count += 1
+
                 for error_message, error_count in error_counts.items():
-                    add_error_message_to_response('%i finding groups could not be pushed to JIRA: %s' % (error_count, error_message))
+                    add_error_message_to_response('%i finding groups could not be pushed to JIRA/OpenProject: %s' % (error_count, error_message))
 
                 if success_count > 0:
-                    add_success_message_to_response('%i finding groups pushed to JIRA successfully' % success_count)
+                    add_success_message_to_response('%i finding groups pushed to JIRA/OpenProject successfully' % success_count)
 
                 # refresh from db
                 finds = finds.all()
@@ -2057,11 +2260,28 @@ def finding_bulk_update_all(request, pid=None):
                             jira_helper.push_to_jira(finding)
                             success_count += 1
 
+                    if openproject_helper.is_push_all_issues(finding) or form.cleaned_data.get('push_to_openproject'):
+
+                        can_be_pushed_to_openproject, error_message, error_code = openproject_helper.can_be_pushed_to_openproject(finding)
+                        if finding.has_openproject_group_issue and not finding.has_openproject_issue:
+                            error_message = 'finding already pushed as part of Finding Group'
+                            error_counts[error_message] += 1
+                            openproject_helper.log_openproject_alert(error_message, finding)
+                        elif not can_be_pushed_to_openproject:
+                            error_counts[error_message] += 1
+                            openproject_helper.log_openproject_alert(error_message, finding)
+                        else:
+                            logger.debug('pushing to jira from finding.finding_bulk_update_all()')
+                            jira_helper.push_to_jira(finding)
+                            logger.debug('pushing to OpenProject from finding.finding_bulk_update_all()')
+                            openproject_helper.push_to_openproject(finding)
+                            success_count += 1
+
                 for error_message, error_count in error_counts.items():
-                    add_error_message_to_response('%i findings could not be pushed to JIRA: %s' % (error_count, error_message))
+                    add_error_message_to_response('%i findings could not be pushed to JIRA/OpenProject: %s' % (error_count, error_message))
 
                 if success_count > 0:
-                    add_success_message_to_response('%i findings pushed to JIRA successfully' % success_count)
+                    add_success_message_to_response('%i findings pushed to JIRA/OpenProject successfully' % success_count)
 
                 if updated_find_count > 0:
                     messages.add_message(request,
@@ -2275,6 +2495,40 @@ def unlink_jira(request, fid):
 
 @user_is_authorized(Finding, Permissions.Finding_Edit, 'fid')
 @require_POST
+def unlink_openproject(request, fid):
+    finding = get_object_or_404(Finding, id=fid)
+    logger.info('trying to unlink a linked openproject issue from %d:%s', finding.id, finding.title)
+    if finding.has_openproject_issue:
+        try:
+            openproject_helper.finding_unlink_openproject(request, finding)
+
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                'Link to OpenProject issue succesfully deleted',
+                extra_tags='alert-success')
+
+            return JsonResponse({'result': 'OK'})
+        except Exception as e:
+            logger.exception(e)
+            messages.add_message(
+                request,
+                messages.ERROR,
+                'Link to OpenProject could not be deleted, see alerts for details',
+                extra_tags='alert-danger')
+
+            return HttpResponse(status=500)
+    else:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Link to JIRA/OpenProject not found',
+            extra_tags='alert-danger')
+        return HttpResponse(status=400)
+
+
+@user_is_authorized(Finding, Permissions.Finding_Edit, 'fid')
+@require_POST
 def push_to_jira(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     try:
@@ -2304,6 +2558,42 @@ def push_to_jira(request, fid):
             request,
             messages.ERROR,
             'Error pushing to JIRA',
+            extra_tags='alert-danger')
+        return HttpResponse(status=500)
+    # return redirect_to_return_url_or_else(request, reverse('view_finding', args=(finding.id,)))
+
+
+@user_is_authorized(Finding, Permissions.Finding_Edit, 'fid')
+@require_POST
+def push_to_openproject(request, fid):
+    finding = get_object_or_404(Finding, id=fid)
+    try:
+        logger.info('trying to push %d:%s to OpenProject to create or update OpenProject issue', finding.id, finding.title)
+        logger.debug('pushing to openproject from finding.push_to-openproject()')
+
+        # it may look like succes here, but the push_to_openproject are swallowing exceptions
+        # but cant't change too much now without having a test suite, so leave as is for now with the addition warning message to check alerts for background errors.
+        if openproject_helper.push_to_openproject(finding):
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                message='Action queued to create or update linked OpenProject issue, check alerts for background errors.',
+                extra_tags='alert-success')
+        else:
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                'Push to OpenpPoject failed, check alerts on the top right for errors',
+                extra_tags='alert-danger')
+
+        return JsonResponse({'result': 'OK'})
+    except Exception as e:
+        logger.exception(e)
+        logger.error('Error pushing to JIRA/OpenProject: ', exc_info=True)
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Error pushing to JIRA/OpenProject',
             extra_tags='alert-danger')
         return HttpResponse(status=500)
     # return redirect_to_return_url_or_else(request, reverse('view_finding', args=(finding.id,)))

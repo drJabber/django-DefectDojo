@@ -134,6 +134,14 @@
                                 <input id="unlink_from_jira" name="unlink_from_jira" type="checkbox" alt="Select to unlink JIRA issues from Defect Dojo findings"/>
                             </label> {% endcomment %}
                             {% endif %}
+                            {% if system_settings.enable_openproject %}
+                            <label style="font-size: 80%; font-weight: bold; display: block">Push to OpenProject
+                                <input id="id_push_toopenproject" name="push_to_openproject" type="checkbox" alt="Select to push to OpenProject"/>
+                            </label>
+                            {% comment %} <label style="font-size: 80%; font-weight: bold; display: block">Unlink OpenProject issues
+                                <input id="unlink_from_openproject" name="unlink_from_openproject" type="checkbox" alt="Select to unlink OpenProject issues from Defect Dojo findings"/>
+                            </label> {% endcomment %}
+                            {% endif %}
                             {% if system_settings.enable_github %}
                             <label style="font-size: 80%; font-weight: bold; display: block">Push to GitHub
                                 <input id="id_push_togithub" name="push_to_github" type="checkbox" alt="Select to push to GitHub"/>
@@ -210,6 +218,13 @@
                                 <th>Jira</th>
                                 <th>JIRA Age</th>
                                 <th>JIRA Change</th>
+                              {% endif %}
+                            {% endif%}
+                            {% if system_settings.enable_openproject %}
+                              {% if openproject_project and product_tab or not product_tab %}
+                                <th>OpenProject</th>
+                                <th>OpenProject Age</th>
+                                <th>OpenProject Change</th>
                               {% endif %}
                             {% endif%}
                             {% if 'is_finding_groups_enabled'|system_setting_enabled %}
@@ -467,6 +482,33 @@
                                     </td>
                                   {% endif %}
                                 {% endif %}
+                                {% if system_settings.enable_openproject %}
+                                  {% if openproject_project and product_tab or not product_tab %}
+                                    <td class="nowrap">
+                                        {% if finding.has_openproject_group_issue %}
+                                            <a href="{{ finding.finding_group | openproject_issue_url }}" target="_blank"
+                                                alt="OpenProject Bug - {{finding.finding_group | openproject_key}} (group)" data-toggle="tooltip" data-placement="bottom" title="{{finding.finding_group | openproject_key}} (group)">{{finding.finding_group | openproject_key}}</a>
+                                        {% elif finding.has_openproject_issue %}
+                                        <a href="{{ finding | openproject_issue_url }}" target="_blank"
+                                            alt="OpenProject Bug - {{finding | openproject_key}}" data-toggle="tooltip" data-placement="bottom" title="{{finding | openproject_key}}">{{finding | openproject_key}}</a>
+                                      {% endif %}
+                                    </td>
+                                    <td class="nowrap">
+                                        {% if finding.has_openproject_group_issue %}
+                                            {{ finding.finding_group | openproject_creation | timesince }}
+                                        {% else %}
+                                            {{ finding | openproject_creation | timesince }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="nowrap">
+                                        {% if finding.has_openproject_group_issue %}
+                                            {{ finding.finding_group | openproject_change | timesince }}
+                                        {% else %}
+                                            {{ finding | openproject_change | timesince }}
+                                        {% endif %}
+                                    </td>
+                                  {% endif %}
+                                {% endif %}
                                 {% if 'is_finding_groups_enabled'|system_setting_enabled %}
                                 <td class="centered">
                                     {% if finding.has_finding_group %}
@@ -530,6 +572,13 @@
                     { "data": "jira_id" },
                     { "data": "jira_age" },
                     { "data": "jira_change" },
+                  {% endif %}
+                {% endif %}
+                {% if system_settings.enable_openproject %}
+                {% if openproject_project and product_tab or not product_tab %}
+                    { "data": "openproject_id" },
+                    { "data": "openproject_age" },
+                    { "data": "openproject_change" },
                   {% endif %}
                 {% endif %}
                 {% if 'is_finding_groups_enabled'|system_setting_enabled %}
