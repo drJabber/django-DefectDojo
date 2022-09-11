@@ -26,7 +26,7 @@ from django.db import DEFAULT_DB_ALIAS
 from dojo.filters import TemplateFindingFilter, FindingFilter, TestImportFilter
 from dojo.forms import NoteForm, TestForm, \
     DeleteTestForm, AddFindingForm, TypedNoteForm, \
-    ReImportScanForm, JIRAFindingForm, JIRAImportScanForm, \
+    ReImportScanForm, JIRAFindingForm, JIRAImportScanForm, OpenProjectFindingForm, OpenProjectImportScanForm, \
     FindingBulkUpdateForm, CopyTestForm
 from dojo.models import IMPORT_UNTOUCHED_FINDING, Finding, Finding_Group, Test, Note_Type, BurpRawRequestResponse, Endpoint, Stub_Finding, \
     Finding_Template, Cred_Mapping, System_Settings, Test_Import, Product_API_Scan_Configuration, Test_Import_Finding_Action
@@ -38,6 +38,7 @@ from dojo.notifications.helper import create_notification
 from dojo.finding.views import find_available_notetypes
 from functools import reduce
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import dojo.finding.helper as finding_helper
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.debug import sensitive_variables
@@ -125,8 +126,9 @@ def view_test(request, tid):
     product_tab = Product_Tab(prod, title=_("Test"), tab="engagements")
     product_tab.setEngagement(test.engagement)
     jira_project = jira_helper.get_jira_project(test)
+    openproject_project = openproject_helper.get_openproject_project(test)
 
-    finding_groups = test.finding_group_set.all().prefetch_related('findings', 'jira_issue', 'creator', 'findings__vulnerability_id_set')
+    finding_groups = test.finding_group_set.all().prefetch_related('findings', 'jira_issue', 'openproject_issue', 'creator', 'findings__vulnerability_id_set')
 
     bulk_edit_form = FindingBulkUpdateForm(request.GET)
 
@@ -184,6 +186,7 @@ def view_test(request, tid):
                    'creds': creds,
                    'cred_test': cred_test,
                    'jira_project': jira_project,
+                   'openproject_project': openproject_project,
                    'show_export': google_sheets_enabled and system_settings.credentials,
                    'sheet_url': sheet_url,
                    'bulk_edit_form': bulk_edit_form,
@@ -199,9 +202,12 @@ def prefetch_for_findings(findings):
     if isinstance(findings, QuerySet):  # old code can arrive here with prods being a list because the query was already executed
         prefetched_findings = prefetched_findings.select_related('reporter')
         prefetched_findings = prefetched_findings.prefetch_related('jira_issue__jira_project__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('openproject_issue__openproject_project__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__test_type')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__jira_project__jira_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__jira_project_set__jira_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__openproject_project__openproject_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__openproject_project_set__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('found_by')
         prefetched_findings = prefetched_findings.prefetch_related('risk_acceptance_set')
         # we could try to prefetch only the latest note with SubQuery and OuterRef, but I'm getting that MySql doesn't support limits in subqueries.
@@ -217,6 +223,7 @@ def prefetch_for_findings(findings):
         prefetched_findings = prefetched_findings.annotate(active_endpoint_count=Count('endpoint_status__id', filter=Q(endpoint_status__mitigated=False)))
         prefetched_findings = prefetched_findings.annotate(mitigated_endpoint_count=Count('endpoint_status__id', filter=Q(endpoint_status__mitigated=True)))
         prefetched_findings = prefetched_findings.prefetch_related('finding_group_set__jira_issue')
+        prefetched_findings = prefetched_findings.prefetch_related('finding_group_set__openrpoject_issue')
         prefetched_findings = prefetched_findings.prefetch_related('duplicate_finding')
         prefetched_findings = prefetched_findings.prefetch_related('vulnerability_id_set')
     else:
@@ -418,6 +425,8 @@ def add_findings(request, tid):
     form = AddFindingForm(initial={'date': timezone.now().date()}, req_resp=None, product=test.engagement.product)
     push_all_jira_issues = jira_helper.is_push_all_issues(test)
     use_jira = jira_helper.get_jira_project(test) is not None
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(test)
+    use_openproject = openproject_helper.get_openproject_project(test) is not None
 
     if request.method == 'POST':
         form = AddFindingForm(request.POST, req_resp=None, product=test.engagement.product)
@@ -438,11 +447,17 @@ def add_findings(request, tid):
                                      extra_tags='alert-danger')
         if use_jira:
             jform = JIRAFindingForm(request.POST, prefix='jiraform', push_all=push_all_jira_issues, jira_project=jira_helper.get_jira_project(test), finding_form=form)
+        if use_openproject:
+            opform = OpenProjectFindingForm(request.POST, prefix='openprojectform', push_all=push_all_openproject_issues, openproject_project=openproject_helper.get_openproject_project(test), finding_form=form)
 
-        if form.is_valid() and (jform is None or jform.is_valid()):
+        if form.is_valid() and (jform is None or jform.is_valid()) and (opform is None or opform.is_valid()):
             if jform:
                 logger.debug('jform.jira_issue: %s', jform.cleaned_data.get('jira_issue'))
                 logger.debug('jform.push_to_jira: %s', jform.cleaned_data.get('push_to_jira'))
+
+            if opform:
+                logger.debug('opform.openproject_issue: %s', jform.cleaned_data.get('openproject_issue'))
+                logger.debug('opform.push_to_openproject: %s', jform.cleaned_data.get('push_to_openproject'))
 
             new_finding = form.save(commit=False)
             new_finding.test = test
@@ -450,7 +465,7 @@ def add_findings(request, tid):
             new_finding.numerical_severity = Finding.get_numerical_severity(
                 new_finding.severity)
             new_finding.tags = form.cleaned_data['tags']
-            new_finding.save(dedupe_option=False, push_to_jira=False)
+            new_finding.save(dedupe_option=False, push_to_jira=False, push_to_openproject=False)
 
             # Save and add new endpoints
             finding_helper.add_endpoints(new_finding, form)
@@ -458,6 +473,8 @@ def add_findings(request, tid):
             # Push to jira?
             push_to_jira = False
             jira_message = None
+            push_to_openproject = False
+            openproject_message = None
             if jform and jform.is_valid():
                 # can't use helper as when push_all_jira_issues is True, the checkbox gets disabled and is always false
                 # push_to_jira = jira_helper.is_push_to_jira(new_finding, jform.cleaned_data.get('push_to_jira'))
@@ -488,9 +505,39 @@ def add_findings(request, tid):
                         jira_helper.finding_link_jira(request, new_finding, new_jira_issue_key)
                         jira_message = 'Linked a JIRA issue successfully.'
 
+            if opform and opform.is_valid():
+                # can't use helper as when push_all_openproject_issues is True, the checkbox gets disabled and is always false
+                # push_to_openproject = openproject_helper.is_push_to_openproject(new_finding, opform.cleaned_data.get('push_to_openproject'))
+                push_to_openproject = push_all_openproject_issues or opform.cleaned_data.get('push_to_openproject')
+
+                # if the openproject issue key was changed, update database
+                new_openproject_issue_key = opform.cleaned_data.get('openproject_issue')
+                if new_finding.has_openproject_issue:
+                    openproject_issue = new_finding.openproject_issue
+
+                    # everything in DD around openproject integration is based on the internal id of the issue in openproject
+                    # instead of on the public openproject issue key.
+                    # I have no idea why, but it means we have to retrieve the issue from openproject to get the internal openproject id.
+                    # we can assume the issue exist, which is already checked in the validation of the opform
+
+                    if not new_openproject_issue_key:
+                        openproject_helper.finding_unlink_openproject(request, new_finding)
+                        openproject_message = 'Link to OpenProject issue removed successfully.'
+
+                    elif new_openproject_issue_key != new_finding.openproject_issue.openproject_key:
+                        openproject_helper.finding_unlink_openproject(request, new_finding)
+                        openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                        openproject_message = 'Changed OpenProject link successfully.'
+                else:
+                    logger.debug('finding has no openproject issue yet')
+                    if new_openproject_issue_key:
+                        logger.debug('finding has no openproject issue yet, but openproject issue specified in request. trying to link.')
+                        openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
+                        openproject_message = 'Linked a OpenProject issue successfully.'
+
             finding_helper.save_vulnerability_ids(new_finding, form.cleaned_data['vulnerability_ids'].split())
 
-            new_finding.save(false_history=True, push_to_jira=push_to_jira)
+            new_finding.save(false_history=True, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
             create_notification(event='other',
                                 title=_('Addition of %(title)s') % {'title': new_finding.title},
                                 finding=new_finding,
@@ -517,11 +564,14 @@ def add_findings(request, tid):
             form_error = True
             add_error_message_to_response(_('The form has errors, please correct them below.'))
             add_field_errors_to_response(jform)
+            add_field_errors_to_response(opform)
             add_field_errors_to_response(form)
 
     else:
         if use_jira:
             jform = JIRAFindingForm(push_all=jira_helper.is_push_all_issues(test), prefix='jiraform', jira_project=jira_helper.get_jira_project(test), finding_form=form)
+        if use_openproject:
+            opform = OpenProjectFindingForm(push_all=openproject_helper.is_push_all_issues(test), prefix='openprojectform', openproject_project=openproject_helper.get_openproject_project(test), finding_form=form)
 
     product_tab = Product_Tab(test.engagement.product, title=_("Add Finding"), tab="engagements")
     product_tab.setEngagement(test.engagement)
@@ -539,10 +589,12 @@ def add_findings(request, tid):
 @user_is_authorized(Test, Permissions.Finding_Add, 'tid')
 def add_temp_finding(request, tid, fid):
     jform = None
+    opform = None
     test = get_object_or_404(Test, id=tid)
     finding = get_object_or_404(Finding_Template, id=fid)
     findings = Finding_Template.objects.all()
     push_all_jira_issues = jira_helper.is_push_all_issues(finding)
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(finding)
 
     if request.method == 'POST':
 
@@ -550,6 +602,10 @@ def add_temp_finding(request, tid, fid):
         if jira_helper.get_jira_project(test):
             jform = JIRAFindingForm(push_all=jira_helper.is_push_all_issues(test), prefix='jiraform', jira_project=jira_helper.get_jira_project(test), finding_form=form)
             logger.debug('jform valid: %s', jform.is_valid())
+
+        if openproject_helper.get_openproject_project(test):
+            opform = OpenProjectFindingForm(push_all=openproject_helper.is_push_all_issues(test), prefix='openprojectform', openproject_project=openproject_helper.get_openproject_project(test), finding_form=form)
+            logger.debug('opform valid: %s', opform.is_valid())
 
         if (form['active'].value() is False or form['false_p'].value()) and form['duplicate'].value() is False:
             closing_disabled = Note_Type.objects.filter(is_mandatory=True, is_active=True).count()
@@ -591,6 +647,14 @@ def add_temp_finding(request, tid, fid):
                 else:
                     add_error_message_to_response('jira form validation failed: %s' % jform.errors)
 
+            if 'openprojectform-push_to_openproject' in request.POST:
+                opform = OpenProjectFindingForm(request.POST, prefix='openprojectform', instance=new_finding, push_all=push_all_openproject_issues, openproject_project=openproject_helper.get_openproject_project(test), finding_form=form)
+                if opform.is_valid():
+                    if opform.cleaned_data.get('push_to_openproject'):
+                        openproject_helper.push_to_openproject(new_finding)
+                else:
+                    add_error_message_to_response('openproject form validation failed: %s' % opform.errors)
+
             messages.add_message(request,
                                  messages.SUCCESS,
                                  _('Finding from template added successfully.'),
@@ -622,11 +686,17 @@ def add_temp_finding(request, tid, fid):
         if jira_helper.get_jira_project(test):
             jform = JIRAFindingForm(push_all=jira_helper.is_push_all_issues(test), prefix='jiraform', jira_project=jira_helper.get_jira_project(test), finding_form=form)
 
+        if openproject_helper.get_openproject_project(test):
+            opform = OpenProjectFindingForm(push_all=openproject_helper.is_push_all_issues(test), prefix='openprojectform', openproject_project=openproject_helper.get_openproject_project(test), finding_form=form)
+
     # logger.debug('form valid: %s', form.is_valid())
     # logger.debug('jform valid: %s', jform.is_valid())
+    # logger.debug('opform valid: %s', opform.is_valid())
     # logger.debug('form errors: %s', form.errors)
     # logger.debug('jform errors: %s', jform.errors)
     # logger.debug('jform errors: %s', vars(jform))
+    # logger.debug('opform errors: %s', opform.errors)
+    # logger.debug('opform errors: %s', vars(opform))
 
     product_tab = Product_Tab(test.engagement.product, title=_("Add Finding"), tab="engagements")
     product_tab.setEngagement(test.engagement)
@@ -634,6 +704,7 @@ def add_temp_finding(request, tid, fid):
                   {'form': form,
                    'product_tab': product_tab,
                    'jform': jform,
+                   'opform': opform,
                    'findings': findings,
                    'temp': True,
                    'fid': finding.id,
@@ -679,16 +750,25 @@ def re_import_scan_results(request, tid):
     jform = None
     jira_project = jira_helper.get_jira_project(test)
     push_all_jira_issues = jira_helper.is_push_all_issues(test)
+    opform = None
+    openproject_project = openproject_helper.get_openproject_project(test)
+    push_all_openproject_issues = openproject_helper.is_push_all_issues(test)
 
     # Decide if we need to present the Push to JIRA form
     if get_system_setting('enable_jira') and jira_project:
         jform = JIRAImportScanForm(push_all=push_all_jira_issues, prefix='jiraform')
 
+    # Decide if we need to present the Push to OpenProject form
+    if get_system_setting('enable_openproject') and openproject_project:
+        opform = OpenProjectImportScanForm(push_all=push_all_openproject_issues, prefix='openprojectform')
+
     if request.method == "POST":
         form = ReImportScanForm(request.POST, request.FILES, test=test)
         if jira_project:
             jform = JIRAImportScanForm(request.POST, push_all=push_all_jira_issues, prefix='jiraform')
-        if form.is_valid() and (jform is None or jform.is_valid()):
+        if openproject_project:
+            opform = OpenProjectImportScanForm(request.POST, push_all=push_all_openproject_issues, prefix='openprojectform')
+        if form.is_valid() and (jform is None or jform.is_valid()) and (opform is None or opform.is_valid()):
             scan_date = form.cleaned_data['scan_date']
 
             minimum_severity = form.cleaned_data['minimum_severity']
@@ -720,6 +800,7 @@ def re_import_scan_results(request, tid):
                 return HttpResponseRedirect(reverse('re_import_scan_results', args=(test.id,)))
 
             push_to_jira = push_all_jira_issues or (jform and jform.cleaned_data.get('push_to_jira'))
+            push_to_openproject = push_all_openproject_issues or (opform and opform.cleaned_data.get('push_to_openproject'))
             error = False
             finding_count, new_finding_count, closed_finding_count, reactivated_finding_count, untouched_finding_count = 0, 0, 0, 0, 0
             reimporter = ReImporter()
@@ -729,7 +810,7 @@ def re_import_scan_results(request, tid):
                                                 tags=None, minimum_severity=minimum_severity,
                                                 endpoints_to_add=endpoints_to_add, scan_date=scan_date,
                                                 version=version, branch_tag=branch_tag, build_id=build_id,
-                                                commit_hash=commit_hash, push_to_jira=push_to_jira,
+                                                commit_hash=commit_hash, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
                                                 close_old_findings=close_old_findings, group_by=group_by,
                                                 api_scan_configuration=api_scan_configuration, service=service)
             except Exception as e:
@@ -758,5 +839,6 @@ def re_import_scan_results(request, tid):
                    'eid': engagement.id,
                    'additional_message': additional_message,
                    'jform': jform,
+                   'opform': opform,
                    'scan_types': get_scan_types_sorted(),
                    })

@@ -100,6 +100,27 @@ def op_add_issue(op_connection, obj, **kwargs):
     return op_project_service.create_work_package(op_project, wp)
 
 
+def op_close_issue(op_connection, op_issue, **kwargs):
+    op_close_status_key = kwargs['op_close_status_key']
+
+    work_package = WorkPackage({"id": op_issue.openproject_id})
+    wp_service = op_connection.get_work_package_service()
+    wp = wp_service.find(work_package)
+
+    new_wp = WorkPackage(
+        {
+            "id": wp.id, 
+            "lockVersion": wp.lockVersion,
+            "_links":{
+                "status": {
+                     'href': f'/api/v3/statuses/{op_close_status_key}'
+                }
+            }
+        }
+    )
+    return wp_service.update(new_wp)
+
+
 def op_update_issue(op_connection, op_issue, obj, **kwargs):
     subject = kwargs['subject']
     description = kwargs['issue_description']

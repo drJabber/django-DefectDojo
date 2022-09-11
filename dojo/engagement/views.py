@@ -1273,7 +1273,7 @@ def get_engagements(request):
 
 
 def get_excludes():
-    return ['is_ci_cd', 'jira_issue', 'jira_project', 'objects', 'unaccepted_open_findings']
+    return ['is_ci_cd', 'jira_issue', 'jira_project', 'openproject_issue', 'openproject_project', 'objects', 'unaccepted_open_findings']
 
 
 def get_foreign_keys():

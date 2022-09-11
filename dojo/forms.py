@@ -954,7 +954,8 @@ class AddFindingForm(forms.ModelForm):
     class Meta:
         model = Finding
         exclude = ('reporter', 'url', 'numerical_severity', 'endpoint', 'under_review', 'reviewers', 'cve',
-                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'endpoint_status', 'sla_start_date')
+                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 
+                   'endpoint_status', 'sla_start_date')
 
 
 class AdHocFindingForm(forms.ModelForm):
@@ -1025,7 +1026,8 @@ class AdHocFindingForm(forms.ModelForm):
     class Meta:
         model = Finding
         exclude = ('reporter', 'url', 'numerical_severity', 'under_review', 'reviewers', 'cve',
-                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'endpoint_status', 'sla_start_date')
+                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 
+                   'endpoint_status', 'sla_start_date')
 
 
 class PromoteFindingForm(forms.ModelForm):
@@ -1082,7 +1084,8 @@ class PromoteFindingForm(forms.ModelForm):
     class Meta:
         model = Finding
         exclude = ('reporter', 'url', 'numerical_severity', 'active', 'false_p', 'verified', 'endpoint_status', 'cve',
-                   'duplicate', 'out_of_scope', 'under_review', 'reviewers', 'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change')
+                   'duplicate', 'out_of_scope', 'under_review', 'reviewers', 'review_requested_by', 'is_mitigated', 
+                   'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change')
 
 
 class SplitDateTimeWidget(forms.MultiWidget):
@@ -1252,7 +1255,8 @@ class FindingForm(forms.ModelForm):
     class Meta:
         model = Finding
         exclude = ('reporter', 'url', 'numerical_severity', 'under_review', 'reviewers', 'cve',
-                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 'sonarqube_issue', 'endpoint_status')
+                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'openproject_creation', 'openproject_change', 
+                   'sonarqube_issue', 'endpoint_status')
 
 
 class StubFindingForm(forms.ModelForm):

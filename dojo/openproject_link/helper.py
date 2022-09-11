@@ -25,7 +25,7 @@ from django.urls import reverse
 from dojo.forms import OpenProjectProjectForm, OpenProjectEngagementForm
 from urllib3.exceptions import NewConnectionError
 
-from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, op_update_issue, op_check_attachment
+from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, op_update_issue, op_check_attachment, op_close_issue
 
 logger = logging.getLogger(__name__)
 
@@ -887,7 +887,7 @@ def openproject_attachment(op_connection, finding, op_issue, openproject_filenam
 @dojo_async_task
 @app.task
 @dojo_model_from_id(model=Engagement)
-def close_epic(eng, push_to_jira, **kwargs):
+def close_epic(eng, push_to_openproject, **kwargs):
     engagement = eng
     if not is_openproject_enabled():
         return False
@@ -905,16 +905,10 @@ def close_epic(eng, push_to_jira, **kwargs):
                     logger.warn("OpenProject close epic failed: no issue found")
                     return False
 
-                req_url = openproject_instance.url + '/rest/api/latest/issue/' + \
-                    op_issue.jira_id + '/transitions'
-                json_data = {'transition': {'id': openproject_instance.close_status_key}}
-                r = requests.post(
-                    url=req_url,
-                    auth=HTTPBasicAuth(openproject_instance.username, openproject_instance.password),
-                    json=json_data)
-                if r.status_code != 204:
-                    logger.warn("OpenProject close epic failed with error: {}".format(r.text))
-                    return False
+                openproject = get_openproject_connection(openproject_instance)
+
+                op_close_issue(openproject, op_issue, op_close_status_key=openproject_instance.close_status_key)
+
                 return True
             except BusinessError as e:
                 logger.exception(e)
@@ -1055,49 +1049,46 @@ def add_comment(obj, note, force_push=False, **kwargs):
                 return False
 
 
-# def add_simple_jira_comment(jira_instance, jira_issue, comment):
-#     try:
-#         jira = get_jira_connection(jira_instance)
+def add_simple_openproject_comment(openproject_instance, openproject_issue, comment):
+    try:
+        openproject = get_openproject_connection(openproject_instance)
 
-#         jira.add_comment(
-#             jira_issue.jira_id, comment
-#         )
-#         return True
-#     except Exception as e:
-#         log_jira_generic_alert('Jira Add Comment Error', str(e))
-#         return False
+        openproject.add_comment(
+            openproject_issue.openproject_id, comment
+        )
+        return True
+    except Exception as e:
+        log_openproject_generic_alert('OpenProject Add Comment Error', str(e))
+        return False
 
 
-# def finding_link_jira(request, finding, new_jira_issue_key):
-#     logger.debug('linking existing jira issue %s for finding %i', new_jira_issue_key, finding.id)
+def finding_link_openproject(request, finding, new_openproject_issue_key):
+    logger.debug('linking existing openproject issue %s for finding %i', new_openproject_issue_key, finding.id)
 
-#     existing_jira_issue = jira_get_issue(get_jira_project(finding), new_jira_issue_key)
+    existing_openproject_issue = openproject_get_issue(get_openproject_project(finding), new_openproject_issue_key)
 
-#     jira_project = get_jira_project(finding)
+    openproject_project = get_openproject_project(finding)
 
-#     if not existing_jira_issue:
-#         raise ValueError('JIRA issue not found or cannot be retrieved: ' + new_jira_issue_key)
+    if not existing_openproject_issue:
+        raise ValueError('OpenProject issue not found or cannot be retrieved: ' + new_openproject_issue_key)
 
-#     jira_issue = JIRA_Issue(
-#         jira_id=existing_jira_issue.id,
-#         jira_key=existing_jira_issue.key,
-#         finding=finding,
-#         jira_project=jira_project)
+    openproject_issue = OpenProject_Issue(
+        openproject_id=existing_openproject_issue.id,
+        openproject_key=existing_openproject_issue.key,
+        finding=finding,
+        openproject_project=openproject_project)
 
-#     jira_issue.jira_key = new_jira_issue_key
-#     # jira timestampe are in iso format: 'updated': '2020-07-17T09:49:51.447+0200'
-#     # seems to be a pain to parse these in python < 3.7, so for now just record the curent time as
-#     # as the timestamp the jira link was created / updated in DD
-#     jira_issue.jira_creation = timezone.now()
-#     jira_issue.jira_change = timezone.now()
+    openproject_issue.openproject_id = new_openproject_issue_key
+    openproject_issue.openproject_creation = timezone.now()
+    openproject_issue.openproject_change = timezone.now()
 
-#     jira_issue.save()
+    openproject_issue.save()
 
-#     finding.save(push_to_jira=False, dedupe_option=False, issue_updater_option=False)
+    finding.save(push_to_openproject=False, dedupe_option=False, issue_updater_option=False)
 
-#     jira_issue_url = get_jira_url(finding)
+    openproject_issue_url = get_openproject_url(finding)
 
-#     return True
+    return True
 
 
 def finding_unlink_openproject(request, finding):
