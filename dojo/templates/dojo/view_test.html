@@ -329,6 +329,13 @@
                                     <th>Jira Change</th>
                                 {% endif %}
                             {% endif %}
+                            {% if system_settings.enable_openproject %}
+                                {% if openproject_project and product_tab or not product_tab %}
+                                    <th>OpenProject</th>
+                                    <th>OpenProject Age</th>
+                                    <th>OpenProject Change</th>
+                                {% endif %}
+                            {% endif %}
                         </tr>
                     </thead>
                 <tbody>
@@ -437,6 +444,34 @@
 
                                 <td class="nowrap">
                                     {{ group | jira_change | timesince }}
+                                </td>
+
+                            {% endif %}
+                        {% endif %}
+                        {% if system_settings.enable_openproject %}
+                            {% if openproject_project %}
+
+                                <td id="openproject">
+                                    {% if group.openproject_issue %}
+                                        <a href="{{ group | openproject_issue_url }}"
+                                        target="_blank" title="{{ group | openproject_issue_url }}">{{ group | openproject_key }}</a>
+                                        <i id="unlink_group_openproject_{{ group.id }}" data-group-id="{{ group.id }}" class="fa fa-trash unlink_group_openproject" title="Unlink OpenProject issue from this group of findings."></i>
+                                        <i id="push_group_to_openproject_{{ group.id }}" data-group-id="{{ group.id }}" class="fa fa-share-square push_group_to_openproject" title="Update OpenProject issue with current data from this group of findings."></i>
+                                    {% else %}
+                                        None
+                                        <i id="push_group_to_openproject_{{ group.id }}" data-group-id="{{ group.id }}" class="fa fa-share-square push_group_to_openproject" title="Create OpenProject issue for this group of findings"></i>
+                                        {% comment %} <a href="{% url 'finding_link_to_openproject' group.id %}" title="Link existing OpenProject issue to finding.">
+                                            <i class="fa fa-asterisk" title="Link existing OpenProject issue to finding."></i>
+                                        </a> {% endcomment %}
+                                    {% endif %}
+                                </td>
+
+                                <td class="nowrap">
+                                    {{ group | openproject_creation | timesince }}
+                                </td>
+
+                                <td class="nowrap">
+                                    {{ group | openproject_change | timesince }}
                                 </td>
 
                             {% endif %}
@@ -620,6 +655,10 @@
                             <b>Push to JIRA</b> <input id="id_push_tojira" name="push_to_jira" type="checkbox" alt="Select to push to JIRA" title="Push_To_Jira"/><br/>
 
                         {% endif %}
+                        {% if system_settings.enable_openproject %}
+                            <b>Push to OpenProject</b> <input id="id_push_to_openproject" name="push_to_openproject" type="checkbox" alt="Select to push to OpenProject" title="Push_To_Openproject"/><br/>
+
+                        {% endif %}
                         <label style="display: block">Notes</label>
                         {{ bulk_edit_form.notes }}
                         <label style="display: block">Tags</label>
@@ -678,6 +717,13 @@
                                     <th>Jira</th>
                                     <th>Jira Age</th>
                                     <th>Jira Change</th>
+                                {% endif %}
+                            {% endif %}
+                            {% if system_settings.enable_openproject %}
+                                {% if openproject_project and product_tab or not product_tab %}
+                                    <th>OpenProject</th>
+                                    <th>OpenProject Age</th>
+                                    <th>OpenProject Change</th>
                                 {% endif %}
                             {% endif %}
                             {% if 'is_finding_groups_enabled'|system_setting_enabled %}
@@ -915,6 +961,33 @@
                                     {{ finding.finding_group | jira_change | timesince }}
                                 {% else %}
                                     {{ finding | jira_change | timesince }}
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        {% endif %}
+                        {% if system_settings.enable_openproject %}
+                            {% if openproject_project and product_tab or not product_tab %}
+                            <td class="nowrap">
+                                {% if finding.has_openproject_group_issue %}
+                                    <a href="{{ finding.finding_group | openproject_issue_url }}" target="_blank"
+                                        alt="OpenProject Bug - {{finding.finding_group | openproject_key}} (group)" data-toggle="tooltip" data-placement="bottom" title="{{finding.finding_group | openproject_key}} (group)">{{finding.finding_group | jira_key}}</a>
+                                {% elif finding.has_openproject_issue %}
+                                <a href="{{ finding | openproject_issue_url }}" target="_blank"
+                                    alt="OpenProject Bug - {{finding | openproject_key}}" data-toggle="tooltip" data-placement="bottom" title="{{finding | openproject_key}}">{{finding | openproject_key}}</a>
+                                {% endif %}
+                            </td>
+                            <td class="nowrap">
+                                {% if finding.has_openproject_group_issue %}
+                                    {{ finding.finding_group | openproject_creation | timesince }}
+                                {% else %}
+                                    {{ finding | openproject_creation | timesince }}
+                                {% endif %}
+                            </td>
+                            <td class="nowrap">
+                                {% if finding.has_openproject_group_issue %}
+                                    {{ finding.finding_group | openproject_change | timesince }}
+                                {% else %}
+                                    {{ finding | openproject_change | timesince }}
                                 {% endif %}
                             </td>
                             {% endif %}
@@ -1200,6 +1273,13 @@
                           { "data": "jira" },
                           { "data": "jira_age" },
                           { "data": "jira_change" },
+                      {% endif %}
+                  {% endif %}
+                  {% if system_settings.enable_openproject %}
+                      {% if openproject_project and product_tab or not product_tab %}
+                          { "data": "openproject" },
+                          { "data": "openproject_age" },
+                          { "data": "openproject_change" },
                       {% endif %}
                   {% endif %}
                   {% if 'is_finding_groups_enabled'|system_setting_enabled %}
@@ -1639,12 +1719,47 @@
             });
         }
 
+        function openproject_action(elem, url) {
+            $(elem).removeClass().addClass('fa fa-spinner fa-spin')
+
+            $.ajax({
+                type: "post",
+                dataType:'json',
+                data: '',
+                context: this,
+                url: url,
+                // The ``X-CSRFToken`` evidently can't be set in the
+                // ``headers`` option, so force it here.
+                // This method requires jQuery 1.5+.
+                beforeSend: function (jqXHR, settings) {
+                    // Pull the token out of the DOM.
+                    jqXHR.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+                },
+                success: function (data, textStatus, jqXHR) {
+                },
+                error: function (request, status, error) {
+                    console.log(request.responseText)
+                },
+                complete: function(e) {
+                    location.reload()
+                }
+            });
+        }
+
         $(".push_group_to_jira").on('click', function(e) {
             jira_action(this, '/finding_group/' + this.dataset.groupId + '/jira/push')
         });
 
         $(".unlink_group_jira").on('click', function(e) {
             jira_action(this, '/finding_group/' + this.dataset.groupId + '/jira/unlink')
+        });
+
+        $(".push_group_to_openproject").on('click', function(e) {
+            openproject_action(this, '/finding_group/' + this.dataset.groupId + '/openproject/push')
+        });
+
+        $(".unlink_group_openproject").on('click', function(e) {
+            openproject_action(this, '/finding_group/' + this.dataset.groupId + '/openproject/unlink')
         });
 
         $('[id^=delete-finding-group-menu-]').on('click', function () {

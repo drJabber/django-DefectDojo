@@ -7,7 +7,7 @@ import multiselectfield.db.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dojo', '0166_copy_sla_from_system_settings'),
+        ('dojo', '0168_alter_system_settings_time_zone'),
     ]
 
     operations = [

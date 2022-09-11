@@ -25,21 +25,9 @@ from django.urls import reverse
 from dojo.forms import OpenProjectProjectForm, OpenProjectEngagementForm
 from urllib3.exceptions import NewConnectionError
 
+from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, op_update_issue, op_check_attachment
+
 logger = logging.getLogger(__name__)
-
-RESOLVED_STATUS = [
-    'Inactive',
-    'Mitigated',
-    'False Positive',
-    'Out of Scope',
-    'Duplicate'
-]
-
-OPEN_STATUS = [
-    'Active',
-    'Verified'
-]
-
 
 def is_openproject_enabled():
     if not get_system_setting('enable_openproject'):
@@ -624,61 +612,26 @@ def add_openproject_issue(obj, *args, **kwargs):
         openproject = get_openproject_connection(openproject_instance)
         # meta = get_openproject_meta(openproject, openproject_project)
 
-        op_project_service = openproject.get_project_service()
-        op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
-        wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
-
-        wp = WorkPackage(wp_form._embedded["payload"]) 
-        wp.subject = openproject_summary(obj)
-        wp_description = openproject_description(obj)
-        wp_environment = openproject_environment(obj)
-        wp_descr = ''
-        if wp_description:
-            wp_descr = wp_descr + 'Description:\n    '+wp_description + '\n'
-        if wp_environment:
-            wp_descr = wp_descr + 'Environment:\n    '+wp_environment + '\n'
-        wp_html_descr = ''
-        if wp_description:
-            wp_html_descr = wp_html_descr + '<p>Description:</p><p>    '+wp_description + '</p>'
-        if wp_environment:
-            wp_html_descr = wp_html_descr + '<p>Environment:</p><p>    '+wp_environment + '</p>'
-
-        wp.description["format"] = 'markdown'
-        wp.description["raw"]= wp_descr
-        wp.description["html"] = wp_html_descr
-
-        op_type = get_op_issue_type_key(openproject, openproject_project)
-        wp._links["type"]["href"] = f'/api/v3/types/{op_type}'
-        wp._links["type"]["title"] = f'{openproject_instance.default_issue_type}'
+        new_issue = op_add_issue(openproject, obj, 
+                            project_id=openproject_project.project_key, 
+                            subject=openproject_summary(obj),
+                            description=openproject_description(obj),
+                            environment=openproject_environment(obj),
+                            issue_type=openproject_instance.default_issue_type,
+                            issue_priority=openproject_priority(obj)
+                           )
         
-        op_priority = openproject_priority(obj)
-        op_priority_key = get_op_issue_priority_key(openproject, openproject_project, op_priority)
-        wp.priority = op_priority_key
-        wp._links["priority"]["href"] = f'/api/v3/priorities/{op_priority_key}'
-        wp._links["priority"]["title"] = f'{op_priority}'
-        
-        if System_Settings.objects.get().enable_finding_sla:
-            duedate = obj.sla_deadline()
-            if duedate:
-                wp.dueDate = duedate.strftime('%Y-%m-%d')
-
-        new_issue = op_project_service.create_work_package(op_project, wp)
-
         # Upload dojo finding screenshots to OpenProject
         findings = [obj]
         if type(obj) == Finding_Group:
             findings = obj.findings.all()
 
-        # for find in findings:
-        #     for pic in get_file_images(find):
-        #         # It doesn't look like the celery cotainer has anything in the media
-        #         # folder. Has this feature ever worked?
-        #         try:
-        #             openproject_attachment(
-        #                 find, openproject, new_issue,
-        #                 settings.MEDIA_ROOT + '/' + pic)
-        #         except FileNotFoundError as e:
-        #             logger.info(e)
+        for find in findings:
+            for pic in get_file_images(find, True):
+                try:
+                    openproject_attachment(openproject, find, new_issue, settings.MEDIA_ROOT + '/' + pic.file.name, pic.title)
+                except FileNotFoundError as e:
+                    logger.info(e)
 
         if openproject_project.enable_engagement_epic_mapping:
             eng = obj.test.engagement
@@ -769,58 +722,40 @@ def update_openproject_issue(obj, *args, **kwargs):
         # BusinessError.log_to_tempfile = False
         openproject = get_openproject_connection(openproject_instance)
 
-        # issue = openproject.issue(op_issue.openproject_id)
-        work_package = WorkPackage({"id": op_issue.openproject_id})
-        wp_service = openproject.get_work_package_service()
-        wp = wp_service.find(work_package)
         description, html_description = openproject_issue_description(obj)
-        new_wp = WorkPackage(
-            {
-                "id": wp.id, 
-                "subject": obj.title, 
-                "description": {
-                    "format": "markdown",
-                    "raw": description,
-                    "html": html_description 
-                },
-                "lockVersion": wp.lockVersion,
-                "_links":{
-                    "status": {
-                    }
-                }
-            }
-        )
-        push_status_to_openproject(obj, openproject_instance, openproject, wp, new_wp)
-        wp_service.update(new_wp)
-        # if updated:
-        #     op_issue.openproject_change = timezone.now()
-        #     op_issue.save()
 
+        updated_issue = op_update_issue(openproject, op_issue, obj, 
+                                        subject=obj.title, 
+                                        issue_description=description, 
+                                        html_description=html_description,
+                                        issue_priority=openproject_priority(obj),
+                                        op_close_status_key=openproject_instance.close_status_key,
+                                        op_open_status_key=openproject_instance.open_status_key
+                                    )
 
-        # # Upload dojo finding screenshots to OpenProject
-        # findings = [obj]
-        # if type(obj) == Finding_Group:
-        #     findings = obj.findings.all()
+        op_issue.openproject_change = timezone.now()
+        op_issue.save()
 
-        # for find in findings:
-        #     for pic in get_file_images(find):
-        #         # It doesn't look like the celery cotainer has anything in the media
-        #         # folder. Has this feature ever worked?
-        #         try:
-        #             openproject_attachment(
-        #                 find, openproject, issue,
-        #                 settings.MEDIA_ROOT + '/' + pic)
-        #         except FileNotFoundError as e:
-        #             logger.info(e)
+        # Upload dojo finding screenshots to OpenProject
+        findings = [obj]
+        if type(obj) == Finding_Group:
+            findings = obj.findings.all()
 
-        # if openproject_project.enable_engagement_epic_mapping:
-        #     eng = find.test.engagement
-        #     logger.debug('Adding to EPIC Map: %s', eng.name)
-        #     epic = get_openproject_issue(eng)
-        #     if epic:
-        #         add_issues_to_epic(openproject, obj, epic_id=epic.openproject_id, issue_keys=[str(op_issue.openproject_id)], ignore_epics=True)
-        #     else:
-        #         logger.info('The following EPIC does not exist: %s', eng.name)
+        for find in findings:
+            for pic in get_file_images(find, True):
+                try:
+                    openproject_attachment(openproject, find, updated_issue, settings.MEDIA_ROOT + '/' + pic.file.name, pic.title)
+                except FileNotFoundError as e:
+                    logger.info(e)
+
+        if openproject_project.enable_engagement_epic_mapping:
+            eng = obj.test.engagement
+            logger.debug('Adding to EPIC Map: %s', eng.name)
+            epic = get_openproject_issue(eng)
+            if epic:
+                add_issues_to_epic(openproject, obj, epic_id=epic.openproject_id, issues=[updated_issue], ignore_epics=True)
+            else:
+                logger.info('The following EPIC does not exist: %s', eng.name)
 
         op_issue.openproject_change = timezone.now()
         op_issue.save()
@@ -867,47 +802,6 @@ def update_openproject_issue(obj, *args, **kwargs):
 #         return None
 
 
-def issue_from_openproject_is_active(issue_from_openproject):
-    status = issue_from_openproject._embedded['status']
-    if  'isClosed' not in status:
-        return True
-
-    if status['isClosed'] == "True":
-        return False
-
-    if status['isClosed']:
-        return False
-
-    return True
-
-
-def push_status_to_openproject(obj, openproject_instance, openproject,  old_wp, new_wp, save=False):
-    status_list = obj.status()
-    issue_closed = False
-    op_issue = obj.openproject_issue
-
-    # check RESOLVED_STATUS first to avoid corner cases with findings that are Inactive, but verified
-    if any(item in status_list for item in RESOLVED_STATUS):
-        if issue_from_openproject_is_active(old_wp):
-            logger.debug(f'Transitioning OpenProject issue status to Resolved: {old_wp}')
-            new_wp._links['status']['href'] = f'/api/v3/statuses/{openproject_instance.close_status_key}'
-            updated = True
-        else:
-            logger.debug(f'Openproject issue already Resolved: {op_issue.openproject_id}')
-            updated = False
-        issue_closed = True
-
-    if not issue_closed and any(item in status_list for item in OPEN_STATUS):
-        if not issue_from_openproject_is_active(old_wp):
-            logger.debug('Transitioning OpenProject issue to Active (Reopen)')
-            new_wp._links['status']['href'] = f'/api/v3/statuses/{openproject_instance.open_status_key}'
-            updated = True
-        else:
-            logger.debug(f'OpenProject issue already Active: {op_issue.openproject_id}')
-            updated = False
-
-    return updated and save
-
 def get_op_issue_type_key(op, openproject_project):
     return list(filter(
         lambda t: t.name==openproject_project.openproject_instance.default_issue_type,
@@ -920,7 +814,7 @@ def get_op_issue_priority_key(op, openproject_project, priority):
     if len(result) > 0:
         return result[0].id
     else:
-        return BusinessError(f"Bad Openproject priority key: {priority}")
+        raise BusinessError(f"Bad Openproject priority key: {priority}")
 
 
 # gets the metadata for the default issue type in this openproject project
@@ -969,41 +863,24 @@ def is_openproject_project_valid(openproject_project):
         return False
 
 
-def openproject_attachment(finding, openproject, issue, file, openproject_filename=None):
-    basename = file
-    if openproject_filename is None:
-        basename = os.path.basename(file)
+def openproject_attachment(op_connection, finding, op_issue, openproject_filename, file_description):
+    basename = os.path.basename(openproject_filename)
 
     # Check to see if the file has been uploaded to OpenProject
     # TODO: OpenProject: check for local existince of attachment as it currently crashes if local attachment doesn't exist
-    if openproject_check_attachment(issue, basename) is False:
+    if op_check_attachment(op_issue, basename) is False:
         try:
-            if openproject_filename is not None:
-                attachment = io.StringIO()
-                attachment.write(openproject_filename)
-                openproject.add_attachment(
-                    issue=issue, attachment=attachment, filename=openproject_filename)
-            else:
-                # read and upload a file
-                with open(file, 'rb') as f:
-                    openproject.add_attachment(issue=issue, attachment=f)
+            # read and upload a file
+            content = None
+            with open(openproject_filename, 'rb') as f:
+                content = f.read()
+            if content:
+                op_add_attachment(op_connection, op_issue, content, basename, file_description)
             return True
         except BusinessError as e:
             logger.exception(e)
             log_openproject_alert("Attachment: " + e.text, finding)
             return False
-
-
-def openproject_check_attachment(issue, source_file_name):
-    file_exists = False
-    for attachment in issue.fields.attachment:
-        filename = attachment.filename
-
-        if filename == source_file_name:
-            file_exists = True
-            break
-
-    return file_exists
 
 
 @dojo_model_to_id
@@ -1082,7 +959,8 @@ def update_epic(engagement, **kwargs):
                 )
                 wp_service.update(new_wp)
             except BusinessError as e:
-                new_epic = op_add_epic(engagement)
+                new_epic = op_add_epic(openproject, engagement, openproject_project, openproject_instance)
+
                 op_issue.openproject_id = new_epic.id
                 op_issue.save()
 
@@ -1096,26 +974,6 @@ def update_epic(engagement, **kwargs):
         return False
 
 
-def op_add_epic(engagement):
-    new_epic = None
-    openproject_project = get_openproject_project(engagement)
-    openproject_instance = get_openproject_instance(engagement)
-    if openproject_project.enable_engagement_epic_mapping:
-        openproject = get_openproject_connection(openproject_instance)
-        logger.debug('add_epic: %s', engagement.name)
-        op_project_service = openproject.get_project_service()
-        op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
-        wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
-        wp = WorkPackage(wp_form._embedded["payload"])            
-        wp.subject = engagement.name
-        wp.description["format"] = 'markdown'
-        wp.description["raw"]= engagement.description
-        wp.description["html"] = f'<p>{engagement.description}</p>'
-        wp._links["type"]["href"] = f'/api/v3/types/{openproject_instance.epic_name_id}'
-        wp._links["type"]["title"] = 'Epic'
-        new_epic = op_project_service.create_work_package(op_project, wp)
-    return new_epic
-    
 @dojo_model_to_id
 @dojo_async_task
 @app.task
@@ -1129,17 +987,21 @@ def add_epic(engagement, **kwargs):
     openproject_instance = get_openproject_instance(engagement)
     openproject_project = get_openproject_project(engagement)
     try:
-        new_epic = op_add_epic(engagement)
-        if new_epic:    
-            op_issue = OpenProject_Issue(
-                openproject_id=new_epic.id,
-                engagement=engagement,
-                openproject_project=openproject_project)
+        if openproject_project.enable_engagement_epic_mapping:
+            openproject = get_openproject_connection(openproject_instance)
+            new_epic = op_add_epic(openproject, engagement, openproject_project, openproject_instance)
+            if new_epic:    
+                op_issue = OpenProject_Issue(
+                    openproject_id=new_epic.id,
+                    engagement=engagement,
+                    openproject_project=openproject_project)
 
-            op_issue.save()
-            return True
+                op_issue.save()
+                return True
+            else:
+                add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
+                return False
         else:
-            add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
             return False
     except BusinessError as e:
         logger.exception(e)
