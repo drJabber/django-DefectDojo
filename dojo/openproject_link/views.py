@@ -14,7 +14,6 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
 # Local application/library imports
-# from dojo.forms import JIRAForm, DeleteJIRAInstanceForm, ExpressJIRAForm
 from dojo.forms import OpenProjectForm, DeleteOpenProjectInstanceForm, ExpressOpenProjectForm
 # from dojo.models import User, OpenProject_Instance, JIRA_Instance, JIRA_Issue, Notes
 from dojo.models import User, OpenProject_Instance, Notes
@@ -28,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 # for examples of incoming json, see the unit tests for the webhook: https://github.com/DefectDojo/django-DefectDojo/blob/master/unittests/test_openproject_webhook.py
-# or the officials docs (which are not always clear): https://developer.atlassian.com/server/jira/platform/webhooks/
+# or the officials docs (which are not always clear): https://www.openproject.org/docs/system-admin-guide/incoming-and-outgoing/webhooks/
 @csrf_exempt
 @require_POST
 def webhook(request, secret=None):
@@ -55,9 +54,8 @@ def webhook(request, secret=None):
 
     if request.method == 'POST':
         try:
-            parsed = {}
-            logger.info('Unrecognized OpenProject webhook event received: Not Implemented yet')
-            # parsed = json.loads(request.body.decode('utf-8'))
+            parsed = json.loads(request.body.decode('utf-8'))
+            logger.info(request.body.decode('utf-8'))
             # if parsed.get('webhookEvent') == 'jira:issue_updated':
             #     # xml examples at the end of file
             #     jid = parsed['issue']['id']

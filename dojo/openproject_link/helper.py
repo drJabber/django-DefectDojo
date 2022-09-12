@@ -25,7 +25,8 @@ from django.urls import reverse
 from dojo.forms import OpenProjectProjectForm, OpenProjectEngagementForm
 from urllib3.exceptions import NewConnectionError
 
-from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, op_update_issue, op_check_attachment, op_close_issue
+from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, \
+    op_update_issue, op_check_attachment, op_close_issue, op_add_comment
 
 logger = logging.getLogger(__name__)
 
@@ -654,6 +655,12 @@ def add_openproject_issue(obj, *args, **kwargs):
 
         logger.info('Created the following openproject issue for %d:%s', obj.id, to_str_typed(obj))
 
+        # Add any notes that already exist in the finding to the JIRA
+        for find in findings:
+            if find.notes.all():
+                for note in find.notes.all().reverse():
+                    add_comment(obj, note)
+
         return True
     except TemplateDoesNotExist as e:
         logger.exception(e)
@@ -1040,9 +1047,7 @@ def add_comment(obj, note, force_push=False, **kwargs):
             try:
                 openproject = get_openproject_connection(openproject_instance)
                 op_issue = obj.openproject_issue
-                openproject.add_comment(
-                    op_issue.openproject_id,
-                    '(%s): %s' % (note.author.get_full_name() if note.author.get_full_name() else note.author.username, note.entry))
+                op_add_comment(openproject, op_issue, note)
                 return True
             except BusinessError as e:
                 log_openproject_generic_alert('OpenProject Add Comment Error', str(e))

@@ -4,6 +4,7 @@ from pyopenproject.business.util.filter import Filter
 from pyopenproject.business.exception.business_error import BusinessError
 from pyopenproject.api_connection.requests.post_request import PostRequest
 from pyopenproject.business.services.command.work_package.add_attachment import AddAttachment
+from pyopenproject.business.services.command.work_package.create_activity import CreateActivity
 from pyopenproject.api_connection.exceptions.request_exception import RequestError
 from pyopenproject.model import attachment
 from dojo.models import System_Settings
@@ -227,3 +228,8 @@ def op_add_attachment(op_connection, op_issue, file, file_name, file_description
         return attachment.Attachment(json_result)
     except RequestError as re:
         raise BusinessError(f"Error adding new attachment: {file_name}") from re
+
+def op_add_comment(op_connection, op_issue, comment):
+    wp = WorkPackage({"id": op_issue.openproject_id})
+    add_cmd = CreateActivity(op_connection, wp, '(%s): %s' % (comment.author.get_full_name() if comment.author.get_full_name() else comment.author.username, comment.entry))    
+    return add_cmd.execute()
