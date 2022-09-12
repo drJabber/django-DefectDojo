@@ -770,36 +770,36 @@ def update_openproject_issue(obj, *args, **kwargs):
         return False
 
 
-# def get_jira_issue_from_jira(find):
-#     logger.debug('getting jira issue from JIRA for %d:%s', find.id, find)
+def get_openproject_issue_from_openproject(find):
+    logger.debug('getting openproject issue from OpenProject for %d:%s', find.id, find)
 
-#     if not is_jira_enabled():
-#         return False
+    if not is_openproject_enabled():
+        return False
 
-#     jira_project = get_jira_project(find)
-#     jira_instance = get_jira_instance(find)
+    openproject_project = get_openproject_project(find)
+    openproject_instance = get_openproject_instance(find)
 
-#     j_issue = find.jira_issue
-#     if not jira_project:
-#         logger.error("Unable to retrieve latest status change from JIRA %s for finding %s as there is no JIRA_Project configured for this finding.", j_issue.jira_key, format(find.id))
-#         log_jira_alert("Unable to retrieve latest status change from JIRA %s for finding %s as there is no JIRA_Project configured for this finding." % (j_issue.jira_key, find), find)
-#         return False
+    op_issue = find.openproject_issue
+    if not openproject_project:
+        logger.error("Unable to retrieve latest status change from OpenProject %s for finding %s as there is no OpenProject_Project configured for this finding.", op_issue.openproject_id, format(find.id))
+        log_openproject_alert("Unable to retrieve latest status change from OpenProject %s for finding %s as there is no OpenProject_Project configured for this finding." % (op_issue.openproject_key, find), find)
+        return False
 
-#     meta = None
-#     try:
-#         JIRAError.log_to_tempfile = False
-#         jira = get_jira_connection(jira_instance)
+    meta = None
+    try:
+        # BusinessError.log_to_tempfile = False
+        openproject = get_openproject_connection(openproject_instance)
 
-#         logger.debug('getting issue from JIRA')
-#         issue_from_jira = jira.issue(j_issue.jira_id)
+        logger.debug('getting issue from OpenProject')
+        work_package = WorkPackage({"id": op_issue.openproject_id})
+        wp_service = openproject.get_work_package_service()
+        return wp_service.find(work_package)
 
-#         return issue_from_jira
-
-#     except JIRAError as e:
-#         logger.exception(e)
-#         logger.error("jira_meta for project: %s and url: %s meta: %s", jira_project.project_key, jira_project.jira_instance.url, json.dumps(meta, indent=4))  # this is None safe
-#         log_jira_alert(e.text, find)
-#         return None
+    except BusinessError as e:
+        logger.exception(e)
+        logger.error("openproject_meta for project: %s and url: %s meta: %s", openproject_project.project_key, openproject_project.openproject_instance.url, json.dumps(meta, indent=4))  # this is None safe
+        log_openproject_alert(e.text, find)
+        return None
 
 
 def get_op_issue_type_key(op, openproject_project):
@@ -1086,7 +1086,7 @@ def finding_link_openproject(request, finding, new_openproject_issue_key):
 
     finding.save(push_to_openproject=False, dedupe_option=False, issue_updater_option=False)
 
-    openproject_issue_url = get_openproject_url(finding)
+    # openproject_issue_url = get_openproject_url(finding)
 
     return True
 
@@ -1220,71 +1220,71 @@ def process_openproject_epic_form(request, engagement=None):
     return not error, openproject_epic_form
 
 
-# # some character will mess with JIRA formatting, for example when constructing a link:
-# # [name|url]. if name contains a '|' is will break it
-# # so [%s|%s] % (escape_for_jira(name), url)
-# def escape_for_jira(text):
-#     return text.replace('|', '%7D')
+# some character will mess with OpenProject formatting, for example when constructing a link:
+# [name|url]. if name contains a '|' is will break it
+# so [%s|%s] % (escape_for_openproject(name), url)
+def escape_for_openproject(text):
+    return text.replace('|', '%7D')
 
 
-# def process_resolution_from_jira(finding, resolution_id, resolution_name, assignee_name, jira_now, jira_issue) -> bool:
-#     """ Processes the resolution field in the JIRA issue and updated the finding in Defect Dojo accordingly """
-#     import dojo.risk_acceptance.helper as ra_helper
-#     status_changed = False
-#     resolved = resolution_id is not None
-#     jira_instance = get_jira_instance(finding)
+def process_resolution_from_openproject(finding, resolution_id, resolution_name, assignee_name, openproject_now, openproject_issue) -> bool:
+    """ Processes the resolution field in the OpenProject issue and updated the finding in Defect Dojo accordingly """
+    import dojo.risk_acceptance.helper as ra_helper
+    status_changed = False
+    resolved = resolution_id is not None
+    openproject_instance = get_openproject_instance(finding)
 
-#     if resolved:
-#         if jira_instance and resolution_name in jira_instance.accepted_resolutions:
-#             if not finding.risk_accepted:
-#                 logger.debug("Marking related finding of {} as accepted. Creating risk acceptance.".format(jira_issue.jira_key))
-#                 finding.active = False
-#                 finding.mitigated = None
-#                 finding.is_mitigated = False
-#                 finding.false_p = False
-#                 ra = Risk_Acceptance.objects.create(
-#                     accepted_by=assignee_name,
-#                     owner=finding.reporter
-#                 )
-#                 finding.test.engagement.risk_acceptance.add(ra)
-#                 ra_helper.add_findings_to_risk_acceptance(ra, [finding])
-#                 status_changed = True
-#         elif jira_instance and resolution_name in jira_instance.false_positive_resolutions:
-#             if not finding.false_p:
-#                 logger.debug("Marking related finding of {} as false-positive".format(jira_issue.jira_key))
-#                 finding.active = False
-#                 finding.verified = False
-#                 finding.mitigated = None
-#                 finding.is_mitigated = False
-#                 finding.false_p = True
-#                 ra_helper.risk_unaccept(finding)
-#                 status_changed = True
-#         else:
-#             # Mitigated by default as before
-#             if not finding.is_mitigated:
-#                 logger.debug("Marking related finding of {} as mitigated (default)".format(jira_issue.jira_key))
-#                 finding.active = False
-#                 finding.mitigated = jira_now
-#                 finding.is_mitigated = True
-#                 finding.mitigated_by, created = User.objects.get_or_create(username='JIRA')
-#                 finding.endpoints.clear()
-#                 finding.false_p = False
-#                 ra_helper.risk_unaccept(finding)
-#                 status_changed = True
-#     else:
-#         if not finding.active:
-#             # Reopen / Open Jira issue
-#             logger.debug("Re-opening related finding of {}".format(jira_issue.jira_key))
-#             finding.active = True
-#             finding.mitigated = None
-#             finding.is_mitigated = False
-#             finding.false_p = False
-#             ra_helper.risk_unaccept(finding)
-#             status_changed = True
+    if resolved:
+        if openproject_instance and resolution_name in openproject_instance.accepted_resolutions:
+            if not finding.risk_accepted:
+                logger.debug("Marking related finding of {} as accepted. Creating risk acceptance.".format(openproject_issue.openproject_id))
+                finding.active = False
+                finding.mitigated = None
+                finding.is_mitigated = False
+                finding.false_p = False
+                ra = Risk_Acceptance.objects.create(
+                    accepted_by=assignee_name,
+                    owner=finding.reporter
+                )
+                finding.test.engagement.risk_acceptance.add(ra)
+                ra_helper.add_findings_to_risk_acceptance(ra, [finding])
+                status_changed = True
+        elif openproject_instance and resolution_name in openproject_instance.false_positive_resolutions:
+            if not finding.false_p:
+                logger.debug("Marking related finding of {} as false-positive".format(openproject_issue.openproject_id))
+                finding.active = False
+                finding.verified = False
+                finding.mitigated = None
+                finding.is_mitigated = False
+                finding.false_p = True
+                ra_helper.risk_unaccept(finding)
+                status_changed = True
+        else:
+            # Mitigated by default as before
+            if not finding.is_mitigated:
+                logger.debug("Marking related finding of {} as mitigated (default)".format(openproject_issue.openproject_id))
+                finding.active = False
+                finding.mitigated = openproject_now
+                finding.is_mitigated = True
+                finding.mitigated_by, created = User.objects.get_or_create(username='OpenProject')
+                finding.endpoints.clear()
+                finding.false_p = False
+                ra_helper.risk_unaccept(finding)
+                status_changed = True
+    else:
+        if not finding.active:
+            # Reopen / Open openproject issue
+            logger.debug("Re-opening related finding of {}".format(openproject_issue.openproject_id))
+            finding.active = True
+            finding.mitigated = None
+            finding.is_mitigated = False
+            finding.false_p = False
+            ra_helper.risk_unaccept(finding)
+            status_changed = True
 
-#     # for findings in a group, there is no jira_issue attached to the finding
-#     jira_issue.jira_change = jira_now
-#     jira_issue.save()
-#     if status_changed:
-#         finding.save()
-#     return status_changed
+    # for findings in a group, there is no openproject_issue attached to the finding
+    openproject_issue.openproject_change = openproject_now
+    openproject_issue.save()
+    if status_changed:
+        finding.save()
+    return status_changed
