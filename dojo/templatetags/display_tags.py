@@ -839,6 +839,23 @@ def jira_change(obj):
 
 
 @register.filter
+def openprojectencode(value):
+    if not value:
+        return value
+    # jira can't handle some characters inside [] tag for urls https://jira.atlassian.com/browse/CONFSERVER-4009
+    return value.replace("|", "").replace("@", "")
+
+
+@register.filter
+def openprojectencode_component(value):
+    if not value:
+        return value
+    # component names can be long and won't wrap causing everything to look messy
+    # add some spaces around semicolon
+    return value.replace("|", "").replace(":", " : ").replace("@", " @ ").replace("?", " ? ").replace("#", " # ")
+
+
+@register.filter
 def openproject_project(obj, use_inheritance=True):
     return openproject_helper.get_openproject_project(obj, use_inheritance)
 

@@ -164,6 +164,12 @@ def jira_status_reconciliation_task(*args, **kwargs):
 
 
 @app.task
+def openproject_status_reconciliation_task(*args, **kwargs):
+    from dojo.management.commands.openproject_status_reconciliation import openproject_status_reconciliation
+    return openproject_status_reconciliation(*args, **kwargs)
+
+
+@app.task
 def fix_loop_duplicates_task(*args, **kwargs):
     from dojo.finding.helper import fix_loop_duplicates
     return fix_loop_duplicates()

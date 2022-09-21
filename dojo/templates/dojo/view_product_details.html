@@ -472,6 +472,14 @@
             </tr>
             {% endif %}
           {% endwith %}
+          {% with openproject_project=prod|openproject_project %}
+            {% if openproject_project %}
+            <tr>
+              <td><strong>{% trans "OpenProject" %}</strong></td>
+              <td><a href="{{ prod | openproject_project_url }}" target="_blank"><i class="fa fa-external-link"></i> {{ prod | openproject_key }}</a></td>
+            </tr>
+            {% endif %}
+          {% endwith %}
         </tbody>
       </table>
     </div>

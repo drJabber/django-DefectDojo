@@ -425,6 +425,77 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
         return has_permission_result
 
 
+class UserHasOpenProjectProductPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            has_permission_result = True
+            engagement_id = request.data.get('engagement', None)
+            if engagement_id:
+                object = get_object_or_404(Engagement, pk=engagement_id)
+                has_permission_result = has_permission_result and \
+                    user_has_permission(request.user, object, Permissions.Engagement_Edit)
+            product_id = request.data.get('product', None)
+            if product_id:
+                object = get_object_or_404(Product, pk=product_id)
+                has_permission_result = has_permission_result and \
+                    user_has_permission(request.user, object, Permissions.Product_Edit)
+            return has_permission_result
+        else:
+            return True
+
+    def has_object_permission(self, request, view, obj):
+        has_permission_result = True
+        engagement = obj.engagement
+        if engagement:
+            has_permission_result = has_permission_result and \
+                check_object_permission(request, engagement, Permissions.Engagement_View, Permissions.Engagement_Edit, Permissions.Engagement_Edit)
+        product = obj.product
+        if product:
+            has_permission_result = has_permission_result and \
+                check_object_permission(request, product, Permissions.Product_View, Permissions.Product_Edit, Permissions.Product_Edit)
+        return has_permission_result
+
+
+class UserHasOpenProjectIssuePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            has_permission_result = True
+            engagement_id = request.data.get('engagement', None)
+            if engagement_id:
+                object = get_object_or_404(Engagement, pk=engagement_id)
+                has_permission_result = has_permission_result and \
+                    user_has_permission(request.user, object, Permissions.Engagement_Edit)
+            finding_id = request.data.get('finding', None)
+            if finding_id:
+                object = get_object_or_404(Finding, pk=finding_id)
+                has_permission_result = has_permission_result and \
+                    user_has_permission(request.user, object, Permissions.Finding_Edit)
+            finding_group_id = request.data.get('finding_group', None)
+            if finding_group_id:
+                object = get_object_or_404(Finding_Group, pk=finding_group_id)
+                has_permission_result = has_permission_result and \
+                    user_has_permission(request.user, object, Permissions.Finding_Group_Edit)
+            return has_permission_result
+        else:
+            return True
+
+    def has_object_permission(self, request, view, obj):
+        has_permission_result = True
+        engagement = obj.engagement
+        if engagement:
+            has_permission_result = has_permission_result and \
+                check_object_permission(request, engagement, Permissions.Engagement_View, Permissions.Engagement_Edit, Permissions.Engagement_Edit)
+        finding = obj.finding
+        if finding:
+            has_permission_result = has_permission_result and \
+                check_object_permission(request, finding, Permissions.Finding_View, Permissions.Finding_Edit, Permissions.Finding_Edit)
+        finding_group = obj.finding_group
+        if finding_group:
+            has_permission_result = has_permission_result and \
+                check_object_permission(request, finding_group, Permissions.Finding_Group_View, Permissions.Finding_Group_Edit, Permissions.Finding_Group_Edit)
+        return has_permission_result
+
+
 class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_superuser

@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST
 from itertools import chain
 from imagekit import ImageSpec
 from imagekit.processors import ResizeToFill
+from pyopenproject.model.work_package import WorkPackage
 from dojo.utils import add_error_message_to_response, add_field_errors_to_response, add_success_message_to_response, close_external_issue, redirect, reopen_external_issue
 import copy
 from dojo.filters import TemplateFindingFilter, SimilarFindingFilter, FindingFilter, AcceptedFindingFilter
@@ -247,8 +248,8 @@ def prefetch_for_similar_findings(findings):
         prefetched_findings = prefetched_findings.prefetch_related('test__test_type')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__jira_project__jira_instance')
         prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__jira_project_set__jira_instance')
-        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__openroject_project__openroject_instance')
-        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__openroject_project_set__openroject_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__openproject_project__openproject_instance')
+        prefetched_findings = prefetched_findings.prefetch_related('test__engagement__product__openproject_project_set__openproject_instance')
         prefetched_findings = prefetched_findings.prefetch_related('found_by')
         prefetched_findings = prefetched_findings.prefetch_related('risk_acceptance_set')
         prefetched_findings = prefetched_findings.prefetch_related('risk_acceptance_set__accepted_findings')
@@ -467,15 +468,12 @@ def close_finding(request, fid):
                     status.last_modified = timezone.now()
                     status.save()
 
-                # only push to JIRA if there is an issue, to prevent a new one from being created
-                if jira_helper.is_push_all_issues(finding) and finding.has_jira_issue:
-                    finding.save(push_to_jira=True)
-                else:
-                    finding.save()
-
-                # only push to OpenProject if there is an issue, to prevent a new one from being created
-                if openproject_helper.is_push_all_issues(finding) and finding.has_openproject_issue:
-                    finding.save(push_to_openproject=True)
+                # only push to Jira or OpenProject if there is an issue, to prevent a new one from being created
+                if openproject_helper.is_push_all_issues(finding) and (finding.has_openproject_issue or finding.has_jira_issue):
+                    # save comment to openproject issue
+                    if finding.has_openproject_issue:
+                        openproject_helper.add_comment(finding, new_note, push_to_openproject)
+                    finding.save(push_to_openproject=True, push_to_jira=True)
                 else:
                     finding.save()
 
@@ -572,11 +570,11 @@ def defect_finding_review(request, fid):
 
             openproject = openproject_helper.get_openproject_connection(finding)
             if openproject and finding.has_openproject_issue:
-                j_issue = finding.openproject_issue
-                issue = openproject.issue(j_issue.openproject_id)
+                op_issue = finding.openproject_issue
+                issue = openproject.get_work_package_service().find(WorkPackage({"id": op_issue.openproject_id}))
 
                 if defect_choice == "Close Finding":
-                    # If the issue id is closed openproject will return Reopen Issue
+                    # If the issue id is closed openproject will return Close
                     resolution_id = openproject_helper.openproject_get_resolution_id(openproject, issue,
                                                            "Reopen Issue")
                     if resolution_id is None:
@@ -2182,7 +2180,11 @@ def finding_bulk_update_all(request, pid=None):
                                           current_editor=note.author)
                     history.save()
                     note.history.add(history)
+                    
                     for finding in finds:
+                        # save openproject comment to openproject
+                        if form.cleaned_data.get('push_to_openproject') and finding.has_openproject_issue:
+                            openproject_helper.add_comment(finding, note, True)
                         finding.notes.add(note)
                         finding.save()
 

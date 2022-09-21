@@ -1,6 +1,6 @@
 from crum import get_current_user
 from django.db.models import Exists, OuterRef, Q
-from dojo.models import JIRA_Issue, JIRA_Project, Product_Member, Product_Type_Member, \
+from dojo.models import JIRA_Issue, JIRA_Project, OpenProject_Issue, OpenProject_Project, Product_Member, Product_Type_Member, \
     Product_Group, Product_Type_Group
 from dojo.authorization.authorization import get_roles_for_permission, user_has_global_permission
 

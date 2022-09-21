@@ -13,7 +13,7 @@ from dojo.models import IMPORT_ACTIONS, SEVERITIES, SLA_Configuration, STATS_FIE
     Finding_Template, Test_Type, Development_Environment, NoteHistory, \
     JIRA_Issue, Tool_Product_Settings, Tool_Configuration, Tool_Type, \
     Product_Type, JIRA_Instance, Endpoint, JIRA_Project, \
-    OpenProject_Instance, \
+    OpenProject_Instance, OpenProject_Issue, OpenProject_Project, \
     Notes, DojoMeta, Note_Type, App_Analysis, Endpoint_Status, \
     Sonarqube_Issue, Sonarqube_Issue_Transition, \
     Regulation, System_Settings, FileUpload, SEVERITY_CHOICES, Test_Import, \
@@ -36,6 +36,7 @@ import six
 from django.utils.translation import ugettext_lazy as _
 import json
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import logging
 import tagulous
 from dojo.endpoint.utils import endpoint_meta_import
@@ -992,6 +993,36 @@ class JIRAProjectSerializer(serializers.ModelSerializer):
         return data
 
 
+class OpenProjectIssueSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = OpenProject_Issue
+        fields = '__all__'
+
+    def get_url(self, obj) -> str:
+        return openproject_helper.get_openproject_issue_url(obj)
+
+    def validate(self, data):
+        if self.context['request'].method == 'PATCH':
+            engagement = data.get('engagement', self.instance.engagement)
+            finding = data.get('finding', self.instance.finding)
+            finding_group = data.get('finding_group', self.instance.finding_group)
+        else:
+            engagement = data.get('engagement', None)
+            finding = data.get('finding', None)
+            finding_group = data.get('finding_group', None)
+
+        if ((engagement and not finding and not finding_group) or
+                (finding and not engagement and not finding_group) or
+                (finding_group and not engagement and not finding)):
+            pass
+        else:
+            raise serializers.ValidationError('Either engagement or finding or finding_group has to be set.')
+
+        return data
+
+
 class OpenProjectInstanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = OpenProject_Instance
@@ -999,6 +1030,25 @@ class OpenProjectInstanceSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
         }
+
+
+class OpenProjectProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OpenProject_Project
+        fields = '__all__'
+
+    def validate(self, data):
+        if self.context['request'].method == 'PATCH':
+            engagement = data.get('engagement', self.instance.engagement)
+            product = data.get('product', self.instance.product)
+        else:
+            engagement = data.get('engagement', None)
+            product = data.get('product', None)
+
+        if ((engagement and product) or (not engagement and not product)):
+            raise serializers.ValidationError('Either engagement or product has to be set.')
+
+        return data
 
 
 class SonarqubeIssueSerializer(serializers.ModelSerializer):
@@ -1028,10 +1078,11 @@ class DevelopmentEnvironmentSerializer(serializers.ModelSerializer):
 
 class FindingGroupSerializer(serializers.ModelSerializer):
     jira_issue = JIRAIssueSerializer(read_only=True)
+    openproject_issue = OpenProjectIssueSerializer(read_only=True)
 
     class Meta:
         model = Finding_Group
-        fields = ('id', 'name', 'test', 'jira_issue')
+        fields = ('id', 'name', 'test', 'jira_issue', 'openproject_issue')
 
 
 class TestSerializer(TaggitSerializer, serializers.ModelSerializer):
@@ -1173,6 +1224,7 @@ class FindingTestSerializer(serializers.ModelSerializer):
 class FindingRelatedFieldsSerializer(serializers.Serializer):
     test = serializers.SerializerMethodField()
     jira = serializers.SerializerMethodField()
+    openproject = serializers.SerializerMethodField()
 
     @extend_schema_field(FindingTestSerializer)
     @swagger_serializer_method(FindingTestSerializer)
@@ -1188,6 +1240,15 @@ class FindingRelatedFieldsSerializer(serializers.Serializer):
         return JIRAIssueSerializer(read_only=True).to_representation(issue)
 
 
+    @extend_schema_field(OpenProjectIssueSerializer)
+    @swagger_serializer_method(OpenProjectIssueSerializer)
+    def get_openproject(self, obj):
+        issue = openproject_helper.get_openproject_issue(obj)
+        if issue is None:
+            return None
+        return OpenProjectIssueSerializer(read_only=True).to_representation(issue)
+
+
 class VulnerabilityIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vulnerability_Id
@@ -1199,6 +1260,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     request_response = serializers.SerializerMethodField()
     accepted_risks = RiskAcceptanceSerializer(many=True, read_only=True, source='risk_acceptance_set')
     push_to_jira = serializers.BooleanField(default=False)
+    push_to_openproject = serializers.BooleanField(default=False)
     age = serializers.IntegerField(read_only=True)
     sla_days_remaining = serializers.IntegerField(read_only=True)
     finding_meta = FindingMetaSerializer(read_only=True, many=True)
@@ -1206,6 +1268,8 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     # for backwards compatibility
     jira_creation = serializers.SerializerMethodField(read_only=True)
     jira_change = serializers.SerializerMethodField(read_only=True)
+    openproject_creation = serializers.SerializerMethodField(read_only=True)
+    openproject_change = serializers.SerializerMethodField(read_only=True)
     display_status = serializers.SerializerMethodField()
     finding_groups = FindingGroupSerializer(source='finding_group_set', many=True, read_only=True)
     vulnerability_ids = VulnerabilityIdSerializer(source='vulnerability_id_set', many=True, required=False)
@@ -1224,6 +1288,16 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     def get_jira_change(self, obj):
         return jira_helper.get_jira_change(obj)
 
+    @extend_schema_field(serializers.DateTimeField())
+    @swagger_serializer_method(serializers.DateTimeField())
+    def get_openproject_creation(self, obj):
+        return openproject_helper.get_openproject_creation(obj)
+
+    @extend_schema_field(serializers.DateTimeField())
+    @swagger_serializer_method(serializers.DateTimeField())
+    def get_openproject_change(self, obj):
+        return openproject_helper.get_openproject_change(obj)
+
     @extend_schema_field(FindingRelatedFieldsSerializer)
     @swagger_serializer_method(FindingRelatedFieldsSerializer)
     def get_related_fields(self, obj):
@@ -1240,7 +1314,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     def get_display_status(self, obj) -> str:
         return obj.status()
 
-    # Overriding this to push add Push to JIRA functionality
+    # Overriding this to push add Push to JIRA or OpenProject functionality
     def update(self, instance, validated_data):
         # remove tags from validated data and store them seperately
         to_be_tagged, validated_data = self._pop_tags(validated_data)
@@ -1248,6 +1322,10 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
         # pop push_to_jira so it won't get send to the model as a field
         # TODO: JIRA can we remove this is_push_all_issues, already checked in apiv2 viewset?
         push_to_jira = validated_data.pop('push_to_jira') or jira_helper.is_push_all_issues(instance)
+
+        # pop push_to_openproject so it won't get send to the model as a field
+        # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
+        push_to_openproject = validated_data.pop('push_to_openproject') or openproject_helper.is_push_all_issues(instance)
 
         # Save vulnerability ids and pop them
         if 'vulnerability_id_set' in validated_data:
@@ -1260,11 +1338,11 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
 
         instance = super(TaggitSerializer, self).update(instance, validated_data)
 
-        # If we need to push to JIRA, an extra save call is needed.
+        # If we need to push to JIRA/openproject, an extra save call is needed.
         # Also if we need to update the mitigation date of the finding.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
-        if push_to_jira:
-            instance.save(push_to_jira=push_to_jira)
+        if push_to_jira or push_to_openproject:
+            instance.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
         # not sure why we are returning a tag_object, but don't want to change too much now as we're just fixing a bug
         tag_object = self._save_tags(instance, to_be_tagged)
@@ -1337,6 +1415,7 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         default=None)
     tags = TagListSerializerField(required=False)
     push_to_jira = serializers.BooleanField(default=False)
+    push_to_openproject = serializers.BooleanField(default=False)
     vulnerability_ids = VulnerabilityIdSerializer(source='vulnerability_id_set', many=True, required=False)
     reporter = serializers.PrimaryKeyRelatedField(required=False, queryset=User.objects.all())
 
@@ -1356,13 +1435,16 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         # pop push_to_jira so it won't get send to the model as a field
         push_to_jira = validated_data.pop('push_to_jira')
 
+        # pop push_to_openproject so it won't get send to the model as a field
+        push_to_openproject = validated_data.pop('push_to_openproject')
+
         # Save vulnerability ids and pop them
         if 'vulnerability_id_set' in validated_data:
             vulnerability_id_set = validated_data.pop('vulnerability_id_set')
         else:
             vulnerability_id_set = None
 
-        # first save, so we have an instance to get push_all_to_jira from
+        # first save, so we have an instance to get push_all_to_jira/openproject from
         new_finding = super(TaggitSerializer, self).create(validated_data)
 
         if vulnerability_id_set:
@@ -1376,10 +1458,13 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         # TODO: JIRA can we remove this is_push_all_issues, already checked in apiv2 viewset?
         push_to_jira = push_to_jira or jira_helper.is_push_all_issues(new_finding)
 
-        # If we need to push to JIRA, an extra save call is needed.
+        # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
+        push_to_openproject = push_to_openproject or openproject_helper.is_push_all_issues(new_finding)
+
+        # If we need to push to JIRA/OpenProject, an extra save call is needed.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
-        if push_to_jira or new_finding:
-            new_finding.save(push_to_jira=push_to_jira)
+        if push_to_jira or push_to_openproject or new_finding:
+            new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
         # not sure why we are returning a tag_object, but don't want to change too much now as we're just fixing a bug
         tag_object = self._save_tags(new_finding, to_be_tagged)
@@ -1527,6 +1612,7 @@ class ImportScanSerializer(serializers.Serializer):
         help_text="Select if old findings no longer present in the report get closed as mitigated when importing. "
                   "If service has been set, only the findings for this service will be closed.")
     push_to_jira = serializers.BooleanField(default=False)
+    push_to_openproject = serializers.BooleanField(default=False)
     environment = serializers.CharField(required=False)
     version = serializers.CharField(required=False)
     build_id = serializers.CharField(required=False)
@@ -1551,7 +1637,7 @@ class ImportScanSerializer(serializers.Serializer):
 
     statistics = ImportStatisticsSerializer(read_only=True, required=False)
 
-    def save(self, push_to_jira=False):
+    def save(self, push_to_jira=False, push_to_openproject=False):
         data = self.validated_data
         close_old_findings = data['close_old_findings']
         active = data['active']
@@ -1592,6 +1678,7 @@ class ImportScanSerializer(serializers.Serializer):
                                                                                             branch_tag=branch_tag, build_id=build_id,
                                                                                             commit_hash=commit_hash,
                                                                                             push_to_jira=push_to_jira,
+                                                                                            push_to_openproject=push_to_openproject,
                                                                                             close_old_findings=close_old_findings,
                                                                                             group_by=group_by,
                                                                                             api_scan_configuration=api_scan_configuration,
@@ -1658,6 +1745,7 @@ class ReImportScanSerializer(TaggitSerializer, serializers.Serializer):
     deduplication_on_engagement = serializers.BooleanField(required=False)
 
     push_to_jira = serializers.BooleanField(default=False)
+    push_to_openproject = serializers.BooleanField(default=False)
     # Close the old findings if the parameter is not provided. This is to
     # mentain the old API behavior after reintroducing the close_old_findings parameter
     # also for ReImport.
@@ -1690,8 +1778,8 @@ class ReImportScanSerializer(TaggitSerializer, serializers.Serializer):
 
     statistics = ImportStatisticsSerializer(read_only=True, required=False)
 
-    def save(self, push_to_jira=False):
-        logger.debug('push_to_jira: %s', push_to_jira)
+    def save(self, push_to_jira=False, push_to_openproject=False):
+        logger.debug('push_to_jira: %s, push_to_openproject: %s', push_to_jira, push_to_openproject)
         data = self.validated_data
         scan_type = data['scan_type']
         endpoint_to_add = data['endpoint_to_add']
@@ -1734,7 +1822,7 @@ class ReImportScanSerializer(TaggitSerializer, serializers.Serializer):
                                                 tags=None, minimum_severity=minimum_severity,
                                                 endpoints_to_add=endpoints_to_add, scan_date=scan_date_time,
                                                 version=version, branch_tag=branch_tag, build_id=build_id,
-                                                commit_hash=commit_hash, push_to_jira=push_to_jira,
+                                                commit_hash=commit_hash, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, 
                                                 close_old_findings=close_old_findings,
                                                 group_by=group_by, api_scan_configuration=api_scan_configuration,
                                                 service=service)
@@ -1754,6 +1842,7 @@ class ReImportScanSerializer(TaggitSerializer, serializers.Serializer):
                                                                                                 branch_tag=branch_tag, build_id=build_id,
                                                                                                 commit_hash=commit_hash,
                                                                                                 push_to_jira=push_to_jira,
+                                                                                                push_to_openproject=push_to_openproject,
                                                                                                 close_old_findings=close_old_findings,
                                                                                                 group_by=group_by,
                                                                                                 api_scan_configuration=api_scan_configuration,
@@ -2038,6 +2127,7 @@ class NotificationsSerializer(serializers.ModelSerializer):
     test_added = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
     scan_added = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
     jira_update = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
+    openproject_update = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
     upcoming_engagement = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
     stale_engagement = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)
     auto_close_engagement = MultipleChoiceField(choices=NOTIFICATION_CHOICES, default=DEFAULT_NOTIFICATION)

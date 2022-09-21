@@ -1,25 +1,24 @@
 from crum import get_current_user
 from django.db.models import Exists, OuterRef, Q
-from dojo.models import JIRA_Issue, JIRA_Project, Product_Member, Product_Type_Member, \
+from dojo.models import OpenProject_Issue, OpenProject_Project, Product_Member, Product_Type_Member, \
     Product_Group, Product_Type_Group
 from dojo.authorization.authorization import get_roles_for_permission, user_has_global_permission
 
-
-def get_authorized_jira_projects(permission, user=None):
+def get_authorized_openrpoject_projects(permission, user=None):
 
     if user is None:
         user = get_current_user()
 
     if user is None:
-        return JIRA_Project.objects.none()
+        return OpenProject_Project.objects.none()
 
-    jira_projects = JIRA_Project.objects.all()
+    openproject_projects = OpenProject_Project.objects.all()
 
     if user.is_superuser:
-        return jira_projects
+        return openproject_projects
 
     if user_has_global_permission(user, permission):
-        return jira_projects
+        return openproject_projects
 
     roles = get_roles_for_permission(permission)
     engagement_authorized_product_type_roles = Product_Type_Member.objects.filter(
@@ -54,7 +53,7 @@ def get_authorized_jira_projects(permission, user=None):
         product=OuterRef('product_id'),
         group__users=user,
         role__in=roles)
-    jira_projects = jira_projects.annotate(
+    openproject_projects = openproject_projects.annotate(
         engagement__product__prod_type__member=Exists(engagement_authorized_product_type_roles),
         engagement__product__member=Exists(engagement_authorized_product_roles),
         engagement__product__prod_type__authorized_group=Exists(engagement_authorized_product_type_groups),
@@ -63,7 +62,7 @@ def get_authorized_jira_projects(permission, user=None):
         product__member=Exists(product_authorized_product_roles),
         product__prod_type__authorized_group=Exists(product_authorized_product_type_groups),
         product__authorized_group=Exists(product_authorized_product_groups))
-    jira_projects = jira_projects.filter(
+    openproject_projects = openproject_projects.filter(
         Q(engagement__product__prod_type__member=True) |
         Q(engagement__product__member=True) |
         Q(engagement__product__prod_type__authorized_group=True) |
@@ -73,22 +72,22 @@ def get_authorized_jira_projects(permission, user=None):
         Q(product__prod_type__authorized_group=True) |
         Q(product__authorized_group=True))
 
-    return jira_projects
+    return openproject_projects
 
 
-def get_authorized_jira_issues(permission):
+def get_authorized_openproject_issues(permission):
     user = get_current_user()
 
     if user is None:
-        return JIRA_Issue.objects.none()
+        return OpenProject_Issue.objects.none()
 
-    jira_issues = JIRA_Issue.objects.all()
+    openproject_issues = OpenProject_Issue.objects.all()
 
     if user.is_superuser:
-        return jira_issues
+        return openproject_issues
 
     if user_has_global_permission(user, permission):
-        return jira_issues
+        return openproject_issues
 
     roles = get_roles_for_permission(permission)
     engagement_authorized_product_type_roles = Product_Type_Member.objects.filter(
@@ -139,7 +138,7 @@ def get_authorized_jira_issues(permission):
         product=OuterRef('finding__test__engagement__product_id'),
         group__users=user,
         role__in=roles)
-    jira_issues = jira_issues.annotate(
+    openproject_issues = openproject_issues.annotate(
         engagement__product__prod_type__member=Exists(engagement_authorized_product_type_roles),
         engagement__product__member=Exists(engagement_authorized_product_roles),
         engagement__product__prod_type__authorized_group=Exists(engagement_authorized_product_type_groups),
@@ -152,7 +151,7 @@ def get_authorized_jira_issues(permission):
         finding__test__engagement__product__member=Exists(finding_authorized_product_roles),
         finding__test__engagement__product__prod_type__authorized_group=Exists(finding_authorized_product_type_groups),
         finding__test__engagement__product__authorized_group=Exists(finding_authorized_product_groups))
-    jira_issues = jira_issues.filter(
+    openproject_issues = openproject_issues.filter(
         Q(engagement__product__prod_type__member=True) |
         Q(engagement__product__member=True) |
         Q(engagement__product__prod_type__authorized_group=True) |
@@ -166,4 +165,4 @@ def get_authorized_jira_issues(permission):
         Q(finding__test__engagement__product__prod_type__authorized_group=True) |
         Q(finding__test__engagement__product__authorized_group=True))
 
-    return jira_issues
+    return openproject_issues

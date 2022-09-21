@@ -25,8 +25,9 @@ from dojo.endpoint.utils import endpoint_get_or_create, endpoint_filter, \
 from dojo.models import Finding, Finding_Group, Product_Type, Product, Note_Type, \
     Check_List, SLA_Configuration, User, Engagement, Test, Test_Type, Notes, Risk_Acceptance, \
     Development_Environment, Dojo_User, Endpoint, Stub_Finding, Finding_Template, \
-    JIRA_Issue, JIRA_Project, JIRA_Instance, OpenProject_Instance, GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
-    OpenProject_Project, OpenProject_Issue, \
+    JIRA_Issue, JIRA_Project, JIRA_Instance, \
+    GITHUB_Issue, GITHUB_PKey, GITHUB_Conf, UserContactInfo, Tool_Type, \
+    OpenProject_Project, OpenProject_Issue, OpenProject_Instance, \
     Tool_Configuration, Tool_Product_Settings, Cred_User, Cred_Mapping, System_Settings, Notifications, \
     App_Analysis, Objects_Product, Benchmark_Product, Benchmark_Requirement, \
     Benchmark_Product_Summary, Rule, Child_Rule, Engagement_Presets, DojoMeta, \
@@ -3169,7 +3170,8 @@ class GoogleSheetFieldsForm(forms.Form):
         self.credentials_required = kwargs.pop('credentials_required')
         options = ((0, 'Hide'), (100, 'Small'), (200, 'Medium'), (400, 'Large'))
         protect = ['reporter', 'url', 'numerical_severity', 'endpoint', 'under_review', 'reviewers',
-                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 'sonarqube_issue']
+                   'review_requested_by', 'is_mitigated', 'jira_creation', 'jira_change', 
+                   'openproject_creation', 'openproject_change','sonarqube_issue']
         self.all_fields = kwargs.pop('all_fields')
         super(GoogleSheetFieldsForm, self).__init__(*args, **kwargs)
         if not self.credentials_required:

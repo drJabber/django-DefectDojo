@@ -764,7 +764,6 @@ def add_jira_issue(obj, *args, **kwargs):
 
 
 # we need two separate celery tasks due to the decorators we're using to map to/from ids
-
 @dojo_model_to_id
 @dojo_async_task
 @app.task

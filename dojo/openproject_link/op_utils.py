@@ -43,6 +43,30 @@ def op_add_epic(op_connection, engagement, openproject_project, openproject_inst
     return op_project_service.create_work_package(op_project, wp)
 
     
+def op_update_epic(op_connection, op_issue, **kwargs):
+    subject = kwargs['subject']
+    description = kwargs['issue_description']
+    html_description = kwargs['html_description']
+    
+    work_package = WorkPackage({"id": op_issue.openproject_id})
+    wp_service = op_connection.get_work_package_service()
+    wp = wp_service.find(work_package)
+    new_wp = WorkPackage(
+        {
+            "id": wp.id, 
+            "subject": subject, 
+            "description": {
+                "format": "markdown",
+                "raw": description,
+                "html": html_description 
+            },
+            "lockVersion": wp.lockVersion
+        }
+    )
+
+    return wp_service.update(new_wp)
+
+
 def op_issue_type_key(op_connection, issue_type):
     return list(filter(lambda t: t.name==issue_type, op_connection.get_type_service().find_all()))[0].id
 
@@ -115,6 +139,27 @@ def op_close_issue(op_connection, op_issue, **kwargs):
             "_links":{
                 "status": {
                      'href': f'/api/v3/statuses/{op_close_status_key}'
+                }
+            }
+        }
+    )
+    return wp_service.update(new_wp)
+
+
+def op_reopen_issue(op_connection, op_issue, **kwargs):
+    op_open_status_key = kwargs['op_open_status_key']
+
+    work_package = WorkPackage({"id": op_issue.openproject_id})
+    wp_service = op_connection.get_work_package_service()
+    wp = wp_service.find(work_package)
+
+    new_wp = WorkPackage(
+        {
+            "id": wp.id, 
+            "lockVersion": wp.lockVersion,
+            "_links":{
+                "status": {
+                     'href': f'/api/v3/statuses/{op_open_status_key}'
                 }
             }
         }
@@ -231,5 +276,5 @@ def op_add_attachment(op_connection, op_issue, file, file_name, file_description
 
 def op_add_comment(op_connection, op_issue, comment):
     wp = WorkPackage({"id": op_issue.openproject_id})
-    add_cmd = CreateActivity(op_connection, wp, '(%s): %s' % (comment.author.get_full_name() if comment.author.get_full_name() else comment.author.username, comment.entry))    
+    add_cmd = CreateActivity(op_connection.conn, wp, '(%s): %s' % (comment.author.get_full_name() if comment.author.get_full_name() else comment.author.username, comment.entry), False)    
     return add_cmd.execute()

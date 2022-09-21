@@ -1,7 +1,6 @@
 import logging
 from dojo.utils import add_error_message_to_response, get_system_setting, to_str_typed
 import os
-import io
 import json
 import requests
 from django.conf import settings
@@ -15,7 +14,6 @@ from pyopenproject.api_connection.exceptions.request_exception import RequestErr
 from pyopenproject.business.util.filter import Filter
 from dojo.models import Finding, Finding_Group, Risk_Acceptance, Stub_Finding, Test, Engagement, Product, \
     OpenProject_Issue, OpenProject_Project, System_Settings, Notes, OpenProject_Instance, User
-from requests.auth import HTTPBasicAuth
 from dojo.notifications.helper import create_notification
 from django.contrib import messages
 from dojo.celery import app
@@ -24,9 +22,8 @@ from dojo.utils import truncate_with_dots, prod_name, get_file_images
 from django.urls import reverse
 from dojo.forms import OpenProjectProjectForm, OpenProjectEngagementForm
 from urllib3.exceptions import NewConnectionError
-
-from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_add_issue, \
-    op_update_issue, op_check_attachment, op_close_issue, op_add_comment
+from dojo.openproject_link.op_utils import op_add_attachment, op_add_epic, op_update_epic, \
+    op_add_issue, op_update_issue, op_check_attachment, op_close_issue, op_reopen_issue, op_add_comment
 
 logger = logging.getLogger(__name__)
 
@@ -387,17 +384,7 @@ def get_openproject_connection(obj):
 
 
 def openproject_get_resolution_id(openproject, issue, status):
-    transitions = openproject.transitions(issue)
-    resolution_id = None
-    for t in transitions:
-        if t['name'] == "Resolve Issue":
-            resolution_id = t['id']
-            break
-        if t['name'] == "Reopen Issue":
-            resolution_id = t['id']
-            break
-
-    return resolution_id
+    return issue.id
 
 
 # Used for unit testing so geting all the connections is manadatory
@@ -410,7 +397,7 @@ def get_openproject_updated(finding):
     if op_issue:
         project = get_openproject_project(finding)
         issue = openproject_get_issue(project, op_issue)
-        return issue.fields.updated
+        return issue.updatedAt
 
 
 # Used for unit testing so geting all the connections is manadatory
@@ -423,7 +410,7 @@ def get_openproject_status(finding):
     if op_issue:
         project = get_openproject_project(finding)
         issue = openproject_get_issue(project, op_issue)
-        return issue.fields.status
+        return issue._embedded["status"]["name"]
 
 
 # Logs the error to the alerts table, which appears in the notification toolbar
@@ -942,23 +929,15 @@ def update_epic(engagement, **kwargs):
         try:
             openproject = get_openproject_connection(openproject_instance)
             op_issue = get_openproject_issue(engagement)
-            work_package = WorkPackage({"id": op_issue.openproject_id})
-            wp_service = openproject.get_work_package_service()
             try:
-                wp = wp_service.find(work_package)
-                new_wp = WorkPackage(
-                    {
-                        "id": wp.id, 
-                        "subject": engagement.name, 
-                        "description": {
-                            "format": "markdown",
-                            "raw": engagement.description,
-                            "html": f'<p>{engagement.description}</p>' 
-                        },
-                        "lockVersion": wp.lockVersion
-                    }
-                )
-                wp_service.update(new_wp)
+                op_update_epic(openproject, 
+                          op_issue, 
+                          subject=engagement.name, 
+                          issue_description=engagement.description, 
+                          html_description=f'<p>{engagement.description}</p>',
+                          op_close_status_key=openproject_instance.close_status_key,
+                          op_open_status_key=openproject_instance.open_status_key
+                        )
             except BusinessError as e:
                 new_epic = op_add_epic(openproject, engagement, openproject_project, openproject_instance)
 
@@ -970,6 +949,42 @@ def update_epic(engagement, **kwargs):
             logger.exception(e)
             log_openproject_generic_alert('OpenProject Engagement/Epic Update Error', str(e))
             return False
+    else:
+        add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
+        return False
+
+
+@dojo_model_to_id
+@dojo_async_task
+@app.task
+@dojo_model_from_id(model=Engagement)
+def reopen_epic(eng, push_to_openproject, **kwargs):
+    engagement = eng
+    if not is_openproject_enabled():
+        return False
+
+    if not is_openproject_configured_and_enabled(engagement):
+        return False
+
+    openproject_project = get_openproject_project(engagement)
+    openproject_instance = get_openproject_instance(engagement)
+    if openproject_project.enable_engagement_epic_mapping:
+        if push_to_openproject:
+            try:
+                op_issue = get_openproject_issue(eng)
+                if op_issue is None:
+                    logger.warn("OpenProject close epic failed: no issue found")
+                    return False
+
+                openproject = get_openproject_connection(openproject_instance)
+
+                op_reopen_issue(openproject, op_issue, op_open_status_key=openproject_instance.open_status_key)
+
+                return True
+            except BusinessError as e:
+                logger.exception(e)
+                log_openproject_generic_alert('OpenProject Engagement/Epic Reopen Error', str(e))
+                return False
     else:
         add_error_message_to_response('Push to OpenProject for Epic skipped because enable_engagement_epic_mapping is not checked for this engagement')
         return False
@@ -1018,9 +1033,11 @@ def openproject_get_issue(openproject_project, issue_key):
     try:
         openproject_instance = openproject_project.openproject_instance
         openproject = get_openproject_connection(openproject_instance)
-        issue = openproject.issue(issue_key)
 
-        return issue
+        logger.debug('getting issue from OpenProject')
+        work_package = WorkPackage({"id": issue_key})
+        wp_service = openproject.get_work_package_service()
+        return wp_service.find(work_package)
     except BusinessError as openproject_error:
         logger.debug('error retrieving openproject issue ' + issue_key + ' ' + str(openproject_error))
         logger.exception(openproject_error)
@@ -1057,10 +1074,8 @@ def add_comment(obj, note, force_push=False, **kwargs):
 def add_simple_openproject_comment(openproject_instance, openproject_issue, comment):
     try:
         openproject = get_openproject_connection(openproject_instance)
+        op_add_comment(openproject, openproject_issue, comment)
 
-        openproject.add_comment(
-            openproject_issue.openproject_id, comment
-        )
         return True
     except Exception as e:
         log_openproject_generic_alert('OpenProject Add Comment Error', str(e))
@@ -1079,7 +1094,6 @@ def finding_link_openproject(request, finding, new_openproject_issue_key):
 
     openproject_issue = OpenProject_Issue(
         openproject_id=existing_openproject_issue.id,
-        openproject_key=existing_openproject_issue.key,
         finding=finding,
         openproject_project=openproject_project)
 

@@ -47,6 +47,9 @@
                     {% if system_settings.enable_jira %}
                     <th class="text-center">JIRA</td>
                     {% endif %}
+                    {% if system_settings.enable_openproject %}
+                    <th class="text-center">OpenProject</td>
+                    {% endif %}
                     <th class="text-center">Tests</th>
                     <th class="text-center">Active (Verified)</th>
                     <th class="text-center">Mitigated</th>
@@ -207,6 +210,11 @@
                       {{ eng|jira_project_tag }}
                     </td>
                     {% endif %}
+                    {% if system_settings.enable_openproject %}
+                    <td class="text-center">
+                      {{ eng|openproject_project_tag }}
+                    </td>
+                    {% endif %}
                     <td class="text-center" class="nowrap">
                       <div class="align-top">
                       {% if eng.count_tests %}
@@ -306,6 +314,9 @@
                     { "data": "length" },
                     {% if system_settings.enable_jira %}
                         { "data": "jira" },
+                    {% endif %}
+                    {% if system_settings.enable_openproject %}
+                        { "data": "openproject" },
                     {% endif %}
                     { "data": "tests" },
                     { "data": "open" },

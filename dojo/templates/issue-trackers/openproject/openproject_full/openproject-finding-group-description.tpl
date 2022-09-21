@@ -5,14 +5,14 @@
 {% url 'view_engagement' finding.test.engagement.id as engagement_url %}
 {% url 'view_test' finding.test.id as test_url %}
 
-A group of Findings has been pushed to JIRA to be investigated and fixed:
+A group of Findings has been pushed to OpenProject to be investigated and fixed:
 
 h2. Group
-*Group*: [{{ finding_group.name|jiraencode}}|{{ finding_group_url|full_url }}] in [{{ finding_group.test.engagement.product.name|jiraencode }}|{{ product_url|full_url }}] / [{{ finding_group.test.engagement.name|jiraencode }}|{{ engagement_url|full_url }}] / [{{ finding_group.test|stringformat:'s'|jiraencode }}|{{ test_url|full_url }}]
+*Group*: [{{ finding_group.name|openprojectencode}}|{{ finding_group_url|full_url }}] in [{{ finding_group.test.engagement.product.name|openprojectencode }}|{{ product_url|full_url }}] / [{{ finding_group.test.engagement.name|openprojectencode }}|{{ engagement_url|full_url }}] / [{{ finding_group.test|stringformat:'s'|openprojectencode }}|{{ test_url|full_url }}]
 
 
 || Severity || CVE || CWE || Component || Version || Title || Status ||{% for finding in finding_group.findings.all %}
-| {{finding.severity}} | {% if finding.cve %}[{{finding.cve}}|{{finding.cve|vulnerability_url}}]{% else %}None{% endif %} | [{{finding.cwe}}|{{finding.cwe|cwe_url}}] | {{finding.component_name|jiraencode_component}} | {{finding.component_version}} | [{{ finding.title|jiraencode}}|{{ finding_url|full_url }}] | {{ finding.status }} |{% endfor %}
+| {{finding.severity}} | {% if finding.cve %}[{{finding.cve}}|{{finding.cve|vulnerability_url}}]{% else %}None{% endif %} | [{{finding.cwe}}|{{finding.cwe|cwe_url}}] | {{finding.component_name|openprojectencode_component}} | {{finding.component_version}} | [{{ finding.title|openprojectencode}}|{{ finding_url|full_url }}] | {{ finding.status }} |{% endfor %}
 
 *Severity:* {{ finding_group.severity }}
 
@@ -35,7 +35,7 @@ h2. Group
 
 h1. Findings
 
-h3. [{{ finding.title|jiraencode}}|{{ finding_url|full_url }}]
+h3. [{{ finding.title|openprojectencode}}|{{ finding_url|full_url }}]
 *Defect Dojo link:* {{ finding_url|full_url }} ({{ finding.id }})
 *Severity:* {{ finding.severity }}
 {% if finding.sla_deadline %} *Due Date:* {{ finding.sla_deadline }} {% endif %}

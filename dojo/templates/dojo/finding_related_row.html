@@ -67,6 +67,15 @@
         </td>
     {% endif %}
 
+    {% if system_settings.enable_openproject %}
+        <td>
+            {% if similar_finding.openproject_issue %}
+                <a href="{{ similar_finding | openproject_issue_url }}"
+                target="_blank" title="{{similar_finding | openproject_issue_url }}">{{ similar_finding | openproject_key }}</a>
+            {% endif %}
+        </td>
+    {% endif %}
+
     <td>
         {% include "dojo/finding_related_actions.html" with similar_finding=similar_finding finding_context=finding %}
     </td>

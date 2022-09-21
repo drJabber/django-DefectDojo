@@ -35,6 +35,9 @@
                             {% if system_settings.enable_jira %}
                                 <th>JIRA</th>
                             {% endif %}
+                            {% if system_settings.enable_openproject %}
+                                <th>OpenProject</th>
+                            {% endif %}
                             <th>Status</th>
                             <th>Period</th>
                             <th>Lead</th>
@@ -62,6 +65,11 @@
                                     {% if system_settings.enable_jira %}
                                     <td class="text-center">
                                       {{ e|jira_project_tag }}
+                                    </td>
+                                    {% endif %}
+                                    {% if system_settings.enable_openproject %}
+                                    <td class="text-center">
+                                      {{ e|openproject_project_tag }}
                                     </td>
                                     {% endif %}
                                     <td> {{ e.status }} </td>

@@ -25,7 +25,7 @@ for asynchronous execution. [RabbitMQ](https://www.rabbitmq.com/) is a well supp
 
 ## Celery Worker
 
-Tasks like deduplication or the Jira synchonization are performed asynchronously
+Tasks like deduplication or the Jira/OpenProject synchonization are performed asynchronously
 in the background by the [Celery](https://docs.celeryproject.org/en/stable/)
 Worker.
 

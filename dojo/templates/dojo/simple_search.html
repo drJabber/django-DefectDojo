@@ -445,6 +445,7 @@
                             <th>{% trans "Title" %}</th>
                             <th>{% trans "Description" %}</th>
                             <th>{% trans "JIRA" %}</th>
+                            <th>{% trans "OpenProject" %}</th>
                             <th>{% trans "Rank" %}</th>
                         </tr>
                         </thead>
@@ -496,6 +497,11 @@
                                     <td>
                                         <a href="{{result.url}}" title="{{result.title}}">
                                             <span style="white-space: nowrap;">{{ result.meta.jira_issue__jira_key }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{{result.url}}" title="{{result.title}}">
+                                            <span style="white-space: nowrap;">{{ result.meta.openproject_issue__openproject_id }}</span>
                                         </a>
                                     </td>
                                     <td>

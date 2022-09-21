@@ -1824,9 +1824,10 @@ def sla_compute_and_notify(*args, **kwargs):
     of the Findings SLA on the System Settings page.
 
     Notifications are managed the usual way, so you'd have to opt-in.
-    Exception is for JIRA issues, which would get a comment anyways.
+    Exception is for JIRA and OpenProject issues, which would get a comment anyways.
     """
     import dojo.jira_link.helper as jira_helper
+    import dojo.openproject_link.helper as openproject_helper
 
     def _notify(finding, title):
         create_notification(
@@ -1841,6 +1842,10 @@ def sla_compute_and_notify(*args, **kwargs):
             logger.info("Creating JIRA comment to notify of SLA breach information.")
             jira_helper.add_simple_jira_comment(jira_instance, jira_issue, title)
 
+        if do_openproject_sla_comment:
+            logger.info("Creating OpenProject comment to notify of SLA breach information.")
+            openproject_helper.add_simple_openproject_comment(openproject_instance, openproject_issue, title)
+
     # exit early on flags
     if not settings.SLA_NOTIFY_ACTIVE and not settings.SLA_NOTIFY_ACTIVE_VERIFIED_ONLY:
         logger.info("Will not notify on SLA breach per user configured settings")
@@ -1848,14 +1853,17 @@ def sla_compute_and_notify(*args, **kwargs):
 
     jira_issue = None
     jira_instance = None
+    openproject_issue = None
+    openproject_instance = None
     try:
         system_settings = System_Settings.objects.get()
         if system_settings.enable_finding_sla:
             logger.info("About to process findings for SLA notifications.")
-            logger.debug("Active {}, Verified {}, Has JIRA {}, pre-breach {}, post-breach {}".format(
+            logger.debug("Active {}, Verified {}, Has JIRA {}, Has OpenProject{}, pre-breach {}, post-breach {}".format(
                 settings.SLA_NOTIFY_ACTIVE,
                 settings.SLA_NOTIFY_ACTIVE_VERIFIED_ONLY,
                 settings.SLA_NOTIFY_WITH_JIRA_ONLY,
+                settings.SLA_NOTIFY_WITH_OPENPROJECT_ONLY,
                 settings.SLA_NOTIFY_PRE_BREACH,
                 settings.SLA_NOTIFY_POST_BREACH,
             ))
@@ -1872,21 +1880,31 @@ def sla_compute_and_notify(*args, **kwargs):
                 logger.debug("Ignoring findings that are not linked to a JIRA issue")
                 no_jira_findings = Finding.objects.exclude(jira_issue__isnull=False)
 
+            no_openproject_findings = {}
+            if settings.SLA_NOTIFY_WITH_OPENPROJECT_ONLY:
+                logger.debug("Ignoring findings that are not linked to a OpenProject issue")
+                no_openproject_findings = Finding.objects.exclude(openproject_issue__isnull=False)
+
             total_count = 0
             pre_breach_count = 0
             post_breach_count = 0
             post_breach_no_notify_count = 0
             jira_count = 0
+            openproject_count = 0
             at_breach_count = 0
 
             # Taking away for now, since the prefetch is not efficient
             # .select_related('jira_issue') \
             # .prefetch_related(Prefetch('test__engagement__product__jira_project_set__jira_instance')) \
+            # or
+            # .select_related('openproject_issue') \
+            # .prefetch_related(Prefetch('test__engagement__product__openproject_project_set__openproject_instance')) \
             # A finding with 'Info' severity will not be considered for SLA notifications (not in model)
             findings = Finding.objects \
                 .filter(query) \
                 .exclude(severity='Info') \
-                .exclude(id__in=no_jira_findings)
+                .exclude(id__in=no_jira_findings) \
+                .exclude(id__in=no_openproject_findings)
 
             for finding in findings:
                 total_count += 1
@@ -1931,6 +1949,36 @@ def sla_compute_and_notify(*args, **kwargs):
                             do_jira_sla_comment = True
                             logger.debug("JIRA issue is {}".format(jira_issue.jira_key))
 
+                do_openrpoject_sla_comment = False
+                openrpoject_issue = None
+                if finding.has_openrpoject_issue:
+                    openrpoject_issue = finding.openrpoject_issue
+                elif finding.has_finding_group:
+                    openrpoject_issue = finding.finding_group.openrpoject_issue
+
+                if openproject_issue:
+                    openproject_count += 1
+                    openproject_instance = openproject_helper.get_openproject_instance(finding)
+                    if openproject_instance is not None:
+                        logger.debug("OpenProject config for finding is {}".format(openproject_instance))
+                        # global config or product config set, product level takes precedence
+                        try:
+                            # TODO: see new property from #2649 to then replace, somehow not working with prefetching though.
+                            product_openproject_sla_comment_enabled = openproject_helper.get_openproject_project(finding).product_openproject_sla_notification
+                        except Exception as e:
+                            logger.error("The product is not linked to a OpenProject configuration! Something is weird here.")
+                            logger.error("Error is: {}".format(e))
+
+                        openprojectconfig_sla_notification_enabled = openproject_instance.global_openproject_sla_notification
+
+                        if openprojectconfig_sla_notification_enabled or product_openproject_sla_comment_enabled:
+                            logger.debug("Global setting {} -- Product setting {}".format(
+                                openprojectconfig_sla_notification_enabled,
+                                product_openproject_sla_comment_enabled
+                            ))
+                            do_openproject_sla_comment = True
+                            logger.debug("OpenProject issue is {}".format(openproject_issue.openproject_id))
+
                 logger.debug("Finding {} has {} days left to breach SLA.".format(finding.id, sla_age))
                 if (sla_age < 0):
                     post_breach_count += 1
@@ -1947,12 +1995,13 @@ def sla_compute_and_notify(*args, **kwargs):
                     logger.info("Security SLA breach warning. Finding ID {} breaching today ({})".format(finding.id, sla_age))
                     _notify(finding, "Finding {} - SLA is breaching today".format(finding.id))
 
-            logger.info("SLA run results: Pre-breach: {}, at-breach: {}, post-breach: {} post-breach-no-notify: {}, with-jira: {}, TOTAL: {}".format(
+            logger.info("SLA run results: Pre-breach: {}, at-breach: {}, post-breach: {} post-breach-no-notify: {}, with-jira: {}, with-openproject: {}, TOTAL: {}".format(
                 pre_breach_count,
                 at_breach_count,
                 post_breach_count,
                 post_breach_no_notify_count,
                 jira_count,
+                openproject_count,
                 total_count
             ))
 

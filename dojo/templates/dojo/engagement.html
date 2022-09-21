@@ -58,6 +58,9 @@
                             {% if system_settings.enable_jira %}
                                 <th>Jira</th>
                             {% endif %}
+                            {% if system_settings.enable_openproject %}
+                                <th>OpenProject</th>
+                            {% endif %}
                         </tr>
 
                         {% for e in engagements %}
@@ -81,6 +84,7 @@
                                         {{ e.product.name }}
                                     </a>
                                     {{ e.product|jira_project_tag }}
+                                    {{ e.product|openproject_project_tag }}
                                     {% include "dojo/snippets/tags.html" with tags=e.product.tags.all %}
                                 </td>
                                 <td class="prod_name">
@@ -99,6 +103,11 @@
                                 {% if system_settings.enable_jira %}
                                     <td>
                                         {{ e|jira_project_tag }}
+                                    </td>
+                                {% endif %}
+                                {% if system_settings.enable_openproject %}
+                                    <td>
+                                        {{ e|openproject_project_tag }}
                                     </td>
                                 {% endif %}
                             </tr>

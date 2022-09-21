@@ -60,6 +60,7 @@ from dojo.finding.queries import get_authorized_findings, get_authorized_stub_fi
 from dojo.endpoint.queries import get_authorized_endpoints, get_authorized_endpoint_status
 from dojo.group.queries import get_authorized_groups, get_authorized_group_members
 from dojo.jira_link.queries import get_authorized_jira_projects, get_authorized_jira_issues
+from dojo.openproject_link.queries import get_authorized_openrpoject_projects, get_authorized_openproject_issues
 from dojo.tool_product.queries import get_authorized_tool_product_settings
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from dojo.authorization.roles_permissions import Permissions
@@ -1078,6 +1079,7 @@ class JiraProjectViewSet(mixins.ListModelMixin,
         return get_authorized_jira_projects(Permissions.Product_View)
 
 
+# Authorization: configuration
 class OpenProjectInstanceViewSet(mixins.ListModelMixin,
                                 mixins.RetrieveModelMixin,
                                 mixins.DestroyModelMixin,
@@ -1090,6 +1092,44 @@ class OpenProjectInstanceViewSet(mixins.ListModelMixin,
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'url')
     permission_classes = (permissions.UserHasConfigurationPermissionSuperuser, )
+
+
+# Authorization: object-based
+class OpenProjectIssuesViewSet(mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.DestroyModelMixin,
+                        mixins.CreateModelMixin,
+                        mixins.UpdateModelMixin,
+                        viewsets.GenericViewSet,
+                        dojo_mixins.DeletePreviewModelMixin):
+    serializer_class = serializers.OpenProjectIssueSerializer
+    queryset = JIRA_Issue.objects.none()
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('id', 'openproject_id', 'finding', 'engagement', 'finding_group')
+    permission_classes = (IsAuthenticated, permissions.UserHasOpenProjectIssuePermission)
+
+    def get_queryset(self):
+        return get_authorized_openproject_issues(Permissions.Product_View)
+
+
+# Authorization: object-based
+class OpenProjectProjectViewSet(mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.DestroyModelMixin,
+                  mixins.UpdateModelMixin,
+                  mixins.CreateModelMixin,
+                  viewsets.GenericViewSet,
+                  dojo_mixins.DeletePreviewModelMixin):
+    serializer_class = serializers.OpenProjectProjectSerializer
+    queryset = JIRA_Project.objects.none()
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('id', 'openproject_instance', 'product', 'engagement', 'component', 'project_key',
+                     'push_all_issues', 'enable_engagement_epic_mapping',
+                     'push_notes')
+    permission_classes = (IsAuthenticated, permissions.UserHasOpenProjectProductPermission)
+
+    def get_queryset(self):
+        return get_authorized_openrpoject_projects(Permissions.Product_View)
 
 
 # Authorization: superuser

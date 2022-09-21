@@ -27,6 +27,8 @@ def reopen_engagement(eng):
     eng.status = 'In Progress'
     eng.save()
 
+    if openproject_helper.get_openproject_project(eng):
+        openproject_helper.reopen_epic(eng, True)
 
 @receiver(pre_save, sender=Engagement)
 def set_name_if_none(sender, instance, *args, **kwargs):
