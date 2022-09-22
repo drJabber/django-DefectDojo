@@ -558,6 +558,8 @@ LOGIN_EXEMPT_URLS = (
     r'^%swebhook/' % URL_PREFIX,
     r'^%sjira/webhook/([\w-]+)$' % URL_PREFIX,
     r'^%sjira/webhook/' % URL_PREFIX,
+    r'^%sopenproject/webhook/([\w-]+)$' % URL_PREFIX,
+    r'^%sopenproject/webhook/' % URL_PREFIX,
     r'^%sreports/cover$' % URL_PREFIX,
     r'^%sfinding/image/(?P<token>[^/]+)$' % URL_PREFIX,
     r'^%sapi/v2/' % URL_PREFIX,

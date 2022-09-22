@@ -15,6 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
 # Local application/library imports
 from dojo.forms import OpenProjectForm, DeleteOpenProjectInstanceForm, ExpressOpenProjectForm
+from dojo.models import OpenProject_Issue
+
 # from dojo.models import User, OpenProject_Instance, JIRA_Instance, JIRA_Issue, Notes
 from dojo.models import User, OpenProject_Instance, Notes
 from dojo.utils import add_breadcrumb, add_error_message_to_response, get_system_setting
@@ -22,8 +24,39 @@ from dojo.notifications.helper import create_notification
 from django.views.decorators.http import require_POST
 import dojo.openproject_link.helper as openproject_helper
 from dojo.authorization.authorization_decorators import user_is_configuration_authorized
+from pyopenproject.model.work_package import WorkPackage
 
 logger = logging.getLogger(__name__)
+
+
+def webhook_process_update(parsed):
+    wp = WorkPackage(parsed['work_package'])
+    op_id = wp.id
+    op_issue = get_object_or_404(OpenProject_Issue, openproject_id=op_id)
+    findings = None
+    if op_issue.finding:
+        logger.info("Received issue update for {} for finding {}".format(op_issue.openproject_id, op_issue.finding.id))
+        findings = [op_issue.finding]
+    elif op_issue.finding_group:
+        logger.info("Received issue update for {} for finding group {}".format(op_issue.openprojectr_id, op_issue.finding_group))
+        findings = op_issue.finding_group.findings.all()
+    elif op_issue.engagement:
+        return HttpResponse('Update for engagement ignored')
+    else:
+        logger.info("Received issue update for {} for unknown object".format(op_issue.openproject_id))
+        raise Http404('No finding, finding_group or engagement found for OpenProject issue {}'.format(op_issue.openproject_id))
+
+    assignee_name = wp._links['assignee'].get('title', '')
+
+    resolution = wp._links['status']
+    resolution = resolution if resolution and resolution != "None" else None
+    resolution_id = resolution['href'].split('/')[-1] if resolution else None
+    resolution_name = resolution.get('title', None) if resolution else None
+    op_now = parse_datetime(wp.updatedAt)
+
+    if findings:
+        for finding in findings:
+            openproject_helper.process_resolution_from_openproject(finding, resolution_id, resolution_name, assignee_name, op_now, op_issue)
 
 
 # for examples of incoming json, see the unit tests for the webhook: https://github.com/DefectDojo/django-DefectDojo/blob/master/unittests/test_openproject_webhook.py
@@ -56,54 +89,8 @@ def webhook(request, secret=None):
         try:
             parsed = json.loads(request.body.decode('utf-8'))
             logger.info(request.body.decode('utf-8'))
-            # if parsed.get('webhookEvent') == 'jira:issue_updated':
-            #     # xml examples at the end of file
-            #     jid = parsed['issue']['id']
-            #     jissue = get_object_or_404(JIRA_Issue, jira_id=jid)
-
-            #     findings = None
-            #     if jissue.finding:
-            #         logging.info("Received issue update for {} for finding {}".format(jissue.jira_key, jissue.finding.id))
-            #         findings = [jissue.finding]
-            #     elif jissue.finding_group:
-            #         logging.info("Received issue update for {} for finding group {}".format(jissue.jira_key, jissue.finding_group))
-            #         findings = jissue.finding_group.findings.all()
-            #     elif jissue.engagement:
-            #         # if parsed['issue']['fields']['resolution'] != None:
-            #         #     eng.active = False
-            #         #     eng.status = 'Completed'
-            #         #     eng.save()
-            #         return HttpResponse('Update for engagement ignored')
-            #     else:
-            #         logging.info("Received issue update for {} for unknown object".format(jissue.jira_key))
-            #         raise Http404('No finding, finding_group or engagement found for JIRA issue {}'.format(jissue.jira_key))
-
-            #     assignee = parsed['issue']['fields'].get('assignee')
-            #     assignee_name = assignee['name'] if assignee else None
-
-            #     resolution = parsed['issue']['fields']['resolution']
-
-            #     #         "resolution":{
-            #     #             "self":"http://www.testjira.com/rest/api/2/resolution/11",
-            #     #             "id":"11",
-            #     #             "description":"Cancelled by the customer.",
-            #     #             "name":"Cancelled"
-            #     #         },
-
-            #     # or
-            #     #         "resolution": null
-
-            #     # or
-            #     #         "resolution": "None"
-
-            #     resolution = resolution if resolution and resolution != "None" else None
-            #     resolution_id = resolution['id'] if resolution else None
-            #     resolution_name = resolution['name'] if resolution else None
-            #     jira_now = parse_datetime(parsed['issue']['fields']['updated'])
-
-            #     if findings:
-            #         for finding in findings:
-            #             jira_helper.process_resolution_from_jira(finding, resolution_id, resolution_name, assignee_name, jira_now, jissue)
+            if parsed.get('action') == 'work_package:updated':
+                webhook_process_update(parsed)
 
             # if parsed.get('webhookEvent') == 'comment_created':
             #     """
