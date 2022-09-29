@@ -23,6 +23,7 @@ def we_want_async(*args, func=None, **kwargs):
         return False
 
     user = kwargs.get('async_user', get_current_user())
+    logger.info(f'------------------------- SAVE ----------  we_want_async for user {user}')
     logger.debug('user: %s', user)
 
     if Dojo_User.wants_block_execution(user):
@@ -40,6 +41,7 @@ def dojo_async_task(func):
     def __wrapper__(*args, **kwargs):
         from dojo.utils import get_current_user
         user = get_current_user()
+        logger.info(f'------------------------- SAVE ----------  dojo_async_task for user {user}')
         kwargs['async_user'] = user
         if we_want_async(*args, func=func, **kwargs):
             return func.delay(*args, **kwargs)
@@ -60,6 +62,7 @@ def dojo_model_to_id(_func=None, *, parameter=0):
         @wraps(func)
         def __wrapper__(*args, **kwargs):
             if not settings.CELERY_PASS_MODEL_BY_ID:
+                logger.info(f'------------------------- SAVE ----------  dojo_model_to_id CELERY_PASS_MODEL_BY_ID')
                 return func(*args, **kwargs)
 
             model_or_id = get_parameter_froms_args_kwargs(args, kwargs, parameter)
@@ -77,8 +80,10 @@ def dojo_model_to_id(_func=None, *, parameter=0):
 
     if _func is None:
         # decorator called without parameters
+        logger.info(f'------------------------- SAVE ----------  dojo_model_to_id empty')
         return dojo_model_to_id_internal
     else:
+        logger.info(f'------------------------- SAVE ----------  dojo_model_to_id func')
         return dojo_model_to_id_internal(_func)
 
 
@@ -94,6 +99,7 @@ def dojo_model_from_id(_func=None, *, model=Finding, parameter=0):
         @wraps(func)
         def __wrapper__(*args, **kwargs):
             if not settings.CELERY_PASS_MODEL_BY_ID:
+                logger.info(f'------------------------- SAVE ----------  dojo_model_FROM_id CELERY_PASS_MODEL_BY_ID')
                 return func(*args, **kwargs)
 
             logger.debug('args:' + str(args))
@@ -122,19 +128,24 @@ def dojo_model_from_id(_func=None, *, model=Finding, parameter=0):
 
     if _func is None:
         # decorator called without parameters
+        logger.info(f'------------------------- SAVE ----------  dojo_model_FROM_id empty')
         return dojo_model_from_id_internal
     else:
+        logger.info(f'------------------------- SAVE ----------  dojo_model_FROM_id func')
         return dojo_model_from_id_internal(_func)
 
 
 def get_parameter_froms_args_kwargs(args, kwargs, parameter):
     model_or_id = None
+    logger.info(f'------------------------- SAVE ----------  parameter {parameter}')
     if isinstance(parameter, int):
         # Lookup value came as a positional argument
         args = list(args)
+        logger.info(f'------------------------- SAVE ----------  parameter {parameter} len(args) {len(args)}')
         if parameter >= len(args):
             raise ValueError('parameter index invalid: ' + str(parameter))
         model_or_id = args[parameter]
+        logger.info(f'------------------------- SAVE ----------  model_or_id {model_or_id}, args[0] {args[0]}, kwargs[user] '+ str(kwargs['user']))
     else:
         # Lookup value was passed as keyword argument
         model_or_id = kwargs.get(parameter, None)

@@ -202,7 +202,7 @@ def webhook(request, secret=None):
     return HttpResponse('')
 
 
-def get_custom_field(openproject, label):
+def get_op_custom_field(openproject, label):
     url = openproject._options["server"].strip('/') + '/rest/api/2/field'
     response = openproject._session.get(url).json()
     for node in response:

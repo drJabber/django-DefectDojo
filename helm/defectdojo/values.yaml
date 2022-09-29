@@ -46,7 +46,7 @@ database: postgresql
 # Primary hostname of instance
 host: defectdojo.default.minikube.local
 
-# The full URL to your defectdojo instance, depends on the domain where DD is deployed, it also affects links in Jira
+# The full URL to your defectdojo instance, depends on the domain where DD is deployed, it also affects links in Jira/OpenProject
 # site_url: 'https://<yourdomain>'
 
 # optional list of alternative hostnames to use that gets appended to

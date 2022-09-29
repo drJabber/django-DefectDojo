@@ -30,11 +30,15 @@ def on_exception_html_source_logger(func):
     return wrapper
 
 
-def set_suite_settings(suite, jira=False, github=False, block_execution=False):
+def set_suite_settings(suite, jira=False, openproject=False, github=False, block_execution=False):
     if jira:
         suite.addTest(BaseTestCase('enable_jira'))
     else:
         suite.addTest(BaseTestCase('disable_jira'))
+    if openproject:
+        suite.addTest(BaseTestCase('enable_openproject'))
+    else:
+        suite.addTest(BaseTestCase('disable_openproject'))
     if github:
         suite.addTest(BaseTestCase('enable_github'))
     else:
@@ -300,6 +304,12 @@ class BaseTestCase(unittest.TestCase):
 
     def disable_jira(self):
         return self.disable_system_setting('id_enable_jira')
+
+    def enable_openproject(self):
+        return self.enable_system_setting('id_enable_openproject')
+
+    def disable_openproject(self):
+        return self.disable_system_setting('id_enable_openproject')
 
     def disable_github(self):
         return self.disable_system_setting('id_enable_github')

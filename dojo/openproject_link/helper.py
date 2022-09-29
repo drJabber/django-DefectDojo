@@ -1254,6 +1254,13 @@ def process_resolution_from_openproject(finding, resolution_id, resolution_name,
     openproject_instance = get_openproject_instance(finding)
 
     if resolved:
+        logger.info(f'------------ resolution_name {resolution_name}')
+        logger.info(f'------------ accepted_resolutions {openproject_instance.accepted_resolutions}')
+        logger.info(f'------------ accepted_resolutions {openproject_instance.false_positive_resolutions}')
+        logger.info(f'------------ risk_accepted {finding.risk_accepted}')
+        logger.info(f'------------ false_p {finding.false_p}')
+        logger.info(f'------------ is_mitigated {finding.is_mitigated}')
+        logger.info(f'------------ active {finding.active}')
         if openproject_instance and resolution_name in openproject_instance.accepted_resolutions:
             if not finding.risk_accepted:
                 logger.debug("Marking related finding of {} as accepted. Creating risk acceptance.".format(openproject_issue.openproject_id))

@@ -537,11 +537,11 @@ class ProductTest(BaseTestCase):
         driver.get(self.base_url + "metrics?date=5&view=dashboard")
 
 
-def add_product_tests_to_suite(suite, jira=False, github=False, block_execution=False):
+def add_product_tests_to_suite(suite, jira=False, openproject=False, github=False, block_execution=False):
     # Add each test and the suite to be run
     # success and failure is output by the test
     suite.addTest(BaseTestCase('test_login'))
-    set_suite_settings(suite, jira=jira, github=github, block_execution=block_execution)
+    set_suite_settings(suite, jira=jira, openproject=openproject, github=github, block_execution=block_execution)
 
     suite.addTest(ProductTest('test_create_product'))
     suite.addTest(ProductTest('test_edit_product_description'))
@@ -574,8 +574,8 @@ def add_product_tests_to_suite(suite, jira=False, github=False, block_execution=
 
 def suite():
     suite = unittest.TestSuite()
-    add_product_tests_to_suite(suite, jira=False, github=False, block_execution=False)
-    add_product_tests_to_suite(suite, jira=True, github=True, block_execution=True)
+    add_product_tests_to_suite(suite, jira=False, openproject=False, github=False, block_execution=False)
+    add_product_tests_to_suite(suite, jira=True, openproject=True, github=True, block_execution=True)
 
     return suite
 

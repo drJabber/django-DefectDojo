@@ -3003,11 +3003,12 @@ class OpenProjectFindingForm(forms.Form):
         else:
             self.fields['openproject_issue'].widget = forms.TextInput(attrs={'placeholder': 'Leave empty and check push to openproject to create a new OpenProject issue for this finding.'})
 
-        if self.instance and self.instance.has_openproject_group_issue:
-            self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
-            self.fields['openproject_issue'].help_text = 'Changing the linked OpenProject issue for finding groups is not (yet) supported.'
-            self.initial['openproject_issue'] = self.instance.finding_group.openproject_issue.openproject_id
-            self.fields['openproject_issue'].disabled = True
+        if self.instance:
+            if hasattr(self.instance, 'has_openproject_group_issue') and self.instance.has_openproject_group_issue:
+                self.fields['push_to_openproject'].widget.attrs['checked'] = 'checked'
+                self.fields['openproject_issue'].help_text = 'Changing the linked OpenProject issue for finding groups is not (yet) supported.'
+                self.initial['openproject_issue'] = self.instance.finding_group.openproject_issue.openproject_id
+                self.fields['openproject_issue'].disabled = True
 
     def clean(self):
         logger.debug('opform clean')

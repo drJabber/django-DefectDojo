@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch, ANY
 from dojo.models import Development_Environment, Product, Engagement, Test, Finding, \
     JIRA_Issue, Test_Type, Tool_Product_Settings, Tool_Configuration, Tool_Type, \
     User, Stub_Finding, Endpoint, JIRA_Project, JIRA_Instance, \
+    OpenProject_Issue, OpenProject_Project, OpenProject_Instance, \
     Finding_Template, Note_Type, App_Analysis, Endpoint_Status, \
     Sonarqube_Issue, Sonarqube_Issue_Transition, Product_API_Scan_Configuration, Notes, \
     BurpRawRequestResponse, DojoMeta, FileUpload, Product_Type, Dojo_Group, \
@@ -12,8 +13,10 @@ from dojo.models import Development_Environment, Product, Engagement, Test, Find
     Product_Group, Global_Role, Dojo_Group_Member, Language_Type, Languages, \
     Notifications, UserContactInfo
 from dojo.api_v2.views import DevelopmentEnvironmentViewSet, EndPointViewSet, EngagementViewSet, \
-    FindingTemplatesViewSet, FindingViewSet, JiraInstanceViewSet, \
-    JiraIssuesViewSet, JiraProjectViewSet, ProductViewSet, \
+    FindingTemplatesViewSet, FindingViewSet, \
+    JiraInstanceViewSet, JiraIssuesViewSet, JiraProjectViewSet, \
+    OpenProjectInstanceViewSet, OpenProjectIssuesViewSet, OpenProjectProjectViewSet, \
+    ProductViewSet, \
     StubFindingsViewSet, TestTypesViewSet, TestsViewSet, \
     ToolConfigurationsViewSet, ToolProductSettingsViewSet, ToolTypesViewSet, \
     UsersViewSet, ImportScanView, NoteTypeViewSet, AppAnalysisViewSet, \
@@ -402,8 +405,8 @@ class BaseClass():
             self.check_schema_response('patch', '200', response, detail=True)
 
             for key, value in self.update_fields.items():
-                # some exception as push_to_jira has been implemented strangely in the update methods in the api
-                if key not in ['push_to_jira', 'ssh', 'password', 'api_key']:
+                # some exception as push_to_jira/openproject has been implemented strangely in the update methods in the api
+                if key not in ['push_to_jira', 'push_to_openproject', 'ssh', 'password', 'api_key']:
                     # Convert data to sets to avoid problems with lists
                     if isinstance(value, list):
                         value = set(value)
@@ -414,6 +417,7 @@ class BaseClass():
                     self.assertEqual(value, response_data)
 
             self.assertFalse('push_to_jira' in response.data)
+            self.assertFalse('push_to_openproject' in response.data)
             self.assertFalse('ssh' in response.data)
             self.assertFalse('password' in response.data)
             self.assertFalse('api_key' in response.data)
@@ -444,6 +448,7 @@ class BaseClass():
             self.check_schema_response('get', '200', response, detail=True)
 
             self.assertFalse('push_to_jira' in response.data)
+            self.assertFalse('push_to_openproject' in response.data)
             self.assertFalse('password' in response.data)
             self.assertFalse('ssh' in response.data)
             self.assertFalse('api_key' in response.data)
@@ -589,6 +594,8 @@ class BaseClass():
                 permission_object = Endpoint.objects.get(id=current_objects['results'][0]['endpoint'])
             elif self.endpoint_model == JIRA_Issue:
                 permission_object = Finding.objects.get(id=current_objects['results'][0]['finding'])
+            elif self.endpoint_model == OpenProject_Issue:
+                permission_object = Finding.objects.get(id=current_objects['results'][0]['finding'])
             else:
                 permission_object = self.permission_check_class.objects.get(id=current_objects['results'][0]['id'])
 
@@ -610,6 +617,8 @@ class BaseClass():
             if self.endpoint_model == Endpoint_Status:
                 permission_object = Endpoint.objects.get(id=current_objects['results'][0]['endpoint'])
             elif self.endpoint_model == JIRA_Issue:
+                permission_object = Finding.objects.get(id=current_objects['results'][0]['finding'])
+            elif self.endpoint_model == OpenProject_Issue:
                 permission_object = Finding.objects.get(id=current_objects['results'][0]['finding'])
             else:
                 permission_object = self.permission_check_class.objects.get(id=current_objects['results'][0]['id'])
@@ -907,7 +916,7 @@ class EngagementTest(BaseClass.RESTEndpointTest):
         self.permission_create = Permissions.Engagement_Add
         self.permission_update = Permissions.Engagement_Edit
         self.permission_delete = Permissions.Engagement_Delete
-        self.deleted_objects = 24
+        self.deleted_objects = 25
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
@@ -1015,7 +1024,7 @@ class FindingsTest(BaseClass.RESTEndpointTest):
             "files": [],
             "tags": ['tag1', 'tag_2'],
         }
-        self.update_fields = {'duplicate': False, 'active': True, "push_to_jira": "True", 'tags': ['finding_tag_new']}
+        self.update_fields = {'duplicate': False, 'active': True, "push_to_jira": "True", "push_to_openproject": "True", 'tags': ['finding_tag_new']}
         self.test_type = TestType.OBJECT_PERMISSIONS
         self.permission_check_class = Finding
         self.permission_create = Permissions.Finding_Add
@@ -1216,6 +1225,85 @@ class JiraProjectTest(BaseClass.RESTEndpointTest):
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
+class OpenProjectInstancesTest(BaseClass.RESTEndpointTest):
+    fixtures = ['dojo_testdata.json']
+
+    def __init__(self, *args, **kwargs):
+        self.endpoint_model = OpenProject_Instance
+        self.endpoint_path = 'openproject_instances'
+        self.viewname = 'openproject_instance'
+        self.viewset = OpenProjectInstanceViewSet
+        self.payload = {
+            "url": "http://www.example.com",
+            "username": "testuser",
+            "password": "testuser",
+            "default_issue_type": "Bug",
+            "epic_name_id": 1111,
+            "open_status_key": 111,
+            "close_status_key": 111,
+            "info_mapping_severity": "LOW",
+            "low_mapping_severity": "LOW",
+            "medium_mapping_severity": "LOW",
+            "high_mapping_severity": "LOW",
+            "critical_mapping_severity": "LOW",
+            "finding_text": "",
+            "global_openproject_sla_notification": False
+        }
+        self.update_fields = {'epic_name_id': 1}
+        self.test_type = TestType.CONFIGURATION_PERMISSIONS
+        self.deleted_objects = 1
+        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
+
+
+class OpenProjectIssuesTest(BaseClass.RESTEndpointTest):
+    fixtures = ['dojo_testdata.json']
+
+    def __init__(self, *args, **kwargs):
+        self.endpoint_model = OpenProject_Issue
+        self.endpoint_path = 'openproject_finding_mappings'
+        self.viewname = 'openproject_issue'
+        self.viewset = OpenProjectIssuesViewSet
+        self.payload = {
+            "openproject_id": "OPENPROJECT 1",
+            "finding": 2,
+        }
+        self.update_fields = {'openproject_change': '2022-09-02T13:47:38.021481Z'}
+        self.test_type = TestType.OBJECT_PERMISSIONS
+        self.permission_check_class = Finding
+        self.permission_create = Permissions.Finding_Edit
+        self.permission_update = Permissions.Finding_Edit
+        self.permission_delete = Permissions.Finding_Edit
+        self.deleted_objects = 1
+        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
+
+
+class OpenProjectProjectTest(BaseClass.RESTEndpointTest):
+    fixtures = ['dojo_testdata.json']
+
+    def __init__(self, *args, **kwargs):
+        self.endpoint_model = OpenProject_Project
+        self.endpoint_path = 'openproject_projects'
+        self.viewname = 'openproject_project'
+        self.viewset = OpenProjectProjectViewSet
+        self.payload = {
+            "project_key": "TEST KEY",
+            "component": "",
+            "push_all_issues": False,
+            "enable_engagement_epic_mapping": False,
+            "push_notes": False,
+            "product": 1,
+            "openproject_instance": 2,
+        }
+        self.update_fields = {'openproject_instance': 3}
+        self.test_type = TestType.OBJECT_PERMISSIONS
+        self.permission_check_class = Product
+        self.permission_create = Permissions.Product_Edit
+        self.permission_update = Permissions.Product_Edit
+        self.permission_delete = Permissions.Product_Edit
+        self.deleted_objects = 1
+        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
+
+
 class SonarqubeIssueTest(BaseClass.RESTEndpointTest):
     fixtures = ['dojo_testdata.json']
 
@@ -1300,7 +1388,7 @@ class ProductTest(BaseClass.RESTEndpointTest):
         self.permission_create = Permissions.Product_Type_Add_Product
         self.permission_update = Permissions.Product_Edit
         self.permission_delete = Permissions.Product_Delete
-        self.deleted_objects = 17
+        self.deleted_objects = 18
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
@@ -1360,7 +1448,7 @@ class TestsTest(BaseClass.RESTEndpointTest):
         self.permission_create = Permissions.Test_Add
         self.permission_update = Permissions.Test_Edit
         self.permission_delete = Permissions.Test_Delete
-        self.deleted_objects = 19
+        self.deleted_objects = 20
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
@@ -2188,7 +2276,7 @@ class ProductTypeTest(BaseClass.RESTEndpointTest):
         self.permission_check_class = Product_Type
         self.permission_update = Permissions.Product_Type_Edit
         self.permission_delete = Permissions.Product_Type_Delete
-        self.deleted_objects = 21
+        self.deleted_objects = 22
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
     def test_create_object_not_authorized(self):

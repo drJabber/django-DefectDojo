@@ -11,7 +11,9 @@ import json
 from django.test import TestCase
 from itertools import chain
 from dojo.jira_link import helper as jira_helper
+from dojo.openproject_link import helper as openproject_helper
 from dojo.jira_link.views import get_custom_field
+from dojo.openproject_link.views import get_op_custom_field
 import logging
 import pprint
 import copy
@@ -29,12 +31,20 @@ class DojoTestUtilsMixin(object):
     def get_test_admin(self, *args, **kwargs):
         return User.objects.get(username='admin')
 
-    def system_settings(self, enable_jira=False, enable_jira_web_hook=False, disable_jira_webhook_secret=False, jira_webhook_secret=None):
+    def system_settings(self, 
+                        enable_jira=False, enable_jira_web_hook=False, disable_jira_webhook_secret=False, jira_webhook_secret=None,
+                        enable_openproject=False, enable_openproject_web_hook=False, disable_openproject_webhook_secret=False, openproject_webhook_secret=None
+                        ):
         ss = System_Settings.objects.get()
         ss.enable_jira = enable_jira
         ss.enable_jira_web_hook = enable_jira_web_hook
         ss.disable_jira_webhook_secret = disable_jira_webhook_secret
         ss.jira_webhook_secret = jira_webhook_secret
+
+        ss.enable_openproject = enable_openproject
+        ss.enable_openproject_web_hook = enable_openproject_web_hook
+        ss.disable_openproject_webhook_secret = disable_openproject_webhook_secret
+        ss.openproject_webhook_secret = openproject_webhook_secret
         ss.save()
 
     def create_product_type(self, name, *args, description='dummy description', **kwargs):
@@ -96,6 +106,16 @@ class DojoTestUtilsMixin(object):
         test = self.get_test(test_id)
         jira_issues = JIRA_Issue.objects.filter(finding_group__test=test)
         self.assertEqual(count, len(jira_issues))
+
+    def assert_openproject_issue_count_in_test(self, test_id, count):
+        test = self.get_test(test_id)
+        openproject_issues = OpenProject_Issue.objects.filter(finding__in=test.finding_set.all())
+        self.assertEqual(count, len(openproject_issues))
+
+    def assert_openproject_group_issue_count_in_test(self, test_id, count):
+        test = self.get_test(test_id)
+        openproject_issues = OpenProject_Issue.objects.filter(finding_group__test=test)
+        self.assertEqual(count, len(openproject_issues))
 
     def model_to_dict(self, instance):
         opts = instance._meta
@@ -201,6 +221,75 @@ class DojoTestUtilsMixin(object):
             # 'enable_engagement_epic_mapping': 'on',
             # 'push_notes': 'on',
             # 'jira-project-form-product_jira_sla_notification': 'on'
+        }
+
+    def get_new_product_with_openproject_project_data(self):
+        return {
+            'name': 'new product',
+            'description': 'new description',
+            'prod_type': 1,
+            'openproject-project-form-project_key': 'IFFFNEW',
+            'openproject-project-form-openproject_instance': 2,
+            'openproject-project-form-enable_engagement_epic_mapping': 'on',
+            'openproject-project-form-push_notes': 'on',
+            'openproject-project-form-product_openproject_sla_notification': 'on',
+            'sla_configuration': 1
+
+        }
+
+    def get_new_product_without_openproject_project_data(self):
+        return {
+            'name': 'new product',
+            'description': 'new description',
+            'prod_type': 1,
+            'sla_configuration': 1
+            # 'project_key': 'IFFF',
+            # 'openproject_instance': 2,
+            # 'enable_engagement_epic_mapping': 'on',
+            # 'push_notes': 'on',
+            # 'openproject-project-form-product_openproject_sla_notification': 'on'
+        }
+
+    def get_product_with_openproject_project_data(self, product):
+        return {
+            'name': product.name,
+            'description': product.description,
+            'prod_type': product.prod_type.id,
+            'openproject-project-form-project_key': 'IFFF',
+            'openproject-project-form-openproject_instance': 2,
+            'openproject-project-form-enable_engagement_epic_mapping': 'on',
+            'openproject-project-form-push_notes': 'on',
+            'openproject-project-form-product_openproject_sla_notification': 'on',
+            'sla_configuration': 1
+
+        }
+
+    def get_product_with_openproject_project_data2(self, product):
+        return {
+            'name': product.name,
+            'description': product.description,
+            'prod_type': product.prod_type.id,
+            'openproject-project-form-project_key': 'IFFF2',
+            'openproject-project-form-openproject_instance': 2,
+            'openproject-project-form-enable_engagement_epic_mapping': 'on',
+            'openproject-project-form-push_notes': 'on',
+            'openproject-project-form-product_openproject_sla_notification': 'on',
+            'sla_configuration': 1
+
+        }
+
+    def get_product_with_empty_openproject_project_data(self, product):
+        return {
+            'name': product.name,
+            'description': product.description,
+            'prod_type': product.prod_type.id,
+            'sla_configuration': 1
+
+            # 'project_key': 'IFFF',
+            # 'openproject_instance': 2,
+            # 'enable_engagement_epic_mapping': 'on',
+            # 'push_notes': 'on',
+            # 'openproject-project-form-product_openproject_sla_notification': 'on'
         }
 
     def get_expected_redirect_product(self, product):
@@ -392,6 +481,188 @@ class DojoTestUtilsMixin(object):
         return model.objects.order_by('id').last()
 
 
+    def add_product_openproject(self, data, expect_redirect_to=None, expect_200=False):
+        response = self.client.get(reverse('new_product'))
+
+        # logger.debug('before: OpenProject_Project last')
+        # self.log_model_instance(OpenProject_Project.objects.last())
+
+        if not expect_redirect_to and not expect_200:
+            expect_redirect_to = '/product/%i'
+
+        response = self.client.post(reverse('new_product'), urlencode(data), content_type='application/x-www-form-urlencoded')
+
+        # logger.debug('after: OpenProject_Project last')
+        # self.log_model_instance(OpenProject_Project.objects.last())
+
+        product = None
+        if expect_200:
+            self.assertEqual(response.status_code, 200)
+        elif expect_redirect_to:
+            self.assertEqual(response.status_code, 302)
+            # print('url: ' + response.url)
+            try:
+                product = Product.objects.get(id=response.url.split('/')[-1])
+            except:
+                try:
+                    product = Product.objects.get(id=response.url.split('/')[-2])
+                except:
+                    raise ValueError('error parsing id from redirect uri: ' + response.url)
+            self.assertTrue(response.url == (expect_redirect_to % product.id))
+        else:
+            self.assertEqual(response.status_code, 200)
+
+        return product
+
+    def db_openproject_project_count(self):
+        return OpenProject_Project.objects.all().count()
+
+    def set_openproject_push_all_issues(self, engagement_or_product):
+        openproject_project = openproject_helper.get_openproject_project(engagement_or_product)
+        openproject_project.push_all_issues = True
+        openproject_project.save()
+
+    def add_product_openproject_with_data(self, data, expected_delta_openproject_project_db, expect_redirect_to=None, expect_200=False):
+        openproject_project_count_before = self.db_openproject_project_count()
+
+        response = self.add_product_openproject(data, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+        self.assertEqual(self.db_openproject_project_count(), openproject_project_count_before + expected_delta_openproject_project_db)
+
+        return response
+
+    def add_product_with_openproject_project(self, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=False):
+        return self.add_product_openproject_with_data(self.get_new_product_with_openproject_project_data(), expected_delta_openproject_project_db, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+    def add_product_without_openproject_project(self, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=False):
+        logger.debug('adding product without openproject project')
+        return self.add_product_openproject_with_data(self.get_new_product_without_openproject_project_data(), expected_delta_openproject_project_db, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+    def edit_product_openproject(self, product, data, expect_redirect_to=None, expect_200=False):
+        response = self.client.get(reverse('edit_product', args=(product.id, )))
+
+        # logger.debug('before: OpenProject_Project last')
+        # self.log_model_instance(OpenProject_Project.objects.last())
+
+        response = self.client.post(reverse('edit_product', args=(product.id, )), urlencode(data), content_type='application/x-www-form-urlencoded')
+        # self.log_model_instance(product)
+        # logger.debug('after: OpenProject_Project last')
+        # self.log_model_instance(OpenProject_Project.objects.last())
+
+        if expect_200:
+            self.assertEqual(response.status_code, 200)
+        elif expect_redirect_to:
+            self.assertRedirects(response, expect_redirect_to)
+        else:
+            self.assertEqual(response.status_code, 200)
+        return response
+
+    def edit_openproject_project_for_product_with_data(self, product, data, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=None):
+        openproject_project_count_before = self.db_openproject_project_count()
+        # print('before: ' + str(openproject_project_count_before))
+
+        if not expect_redirect_to and not expect_200:
+            expect_redirect_to = self.get_expected_redirect_product(product)
+
+        response = self.edit_product_openproject(product, data, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+        # print('after: ' + str(self.db_openproject_project_count()))
+
+        self.assertEqual(self.db_openproject_project_count(), openproject_project_count_before + expected_delta_openproject_project_db)
+        return response
+
+    def edit_openproject_project_for_product(self, product, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=False):
+        return self.edit_openproject_project_for_product_with_data(product, self.get_product_with_openproject_project_data(product), expected_delta_openproject_project_db, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+    def edit_openproject_project_for_product2(self, product, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=False):
+        return self.edit_openproject_project_for_product_with_data(product, self.get_product_with_openproject_project_data2(product), expected_delta_openproject_project_db, expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+    def empty_openproject_project_for_product(self, product, expected_delta_openproject_project_db=0, expect_redirect_to=None, expect_200=False):
+        logger.debug('empty openproject project for product')
+        openproject_project_count_before = self.db_openproject_project_count()
+        # print('before: ' + str(openproject_project_count_before))
+
+        if not expect_redirect_to and not expect_200:
+            expect_redirect_to = self.get_expected_redirect_product(product)
+
+        response = self.edit_product_openproject(product, self.get_product_with_empty_openproject_project_data(product), expect_redirect_to=expect_redirect_to, expect_200=expect_200)
+
+        # print('after: ' + str(self.db_openproject_project_count()))
+
+        self.assertEqual(self.db_openproject_project_count(), openproject_project_count_before + expected_delta_openproject_project_db)
+        return response
+
+    def get_openproject_issue_status(self, finding_id):
+        finding = Finding.objects.get(id=finding_id)
+        updated = openproject_helper.get_openproject_status(finding)
+        return updated
+
+    def get_openproject_issue_updated(self, finding_id):
+        finding = Finding.objects.get(id=finding_id)
+        updated = openproject_helper.get_openproject_updated(finding)
+        return updated
+
+    def get_openproject_comments(self, finding_id):
+        finding = Finding.objects.get(id=finding_id)
+        comments = openproject_helper.get_openproject_comments(finding)
+        return comments
+
+    def get_openproject_issue_updated_map(self, test_id):
+        findings = Test.objects.get(id=test_id).finding_set.all()
+        updated_map = {}
+        for finding in findings:
+            logger.debug('finding!!!')
+            updated = openproject_helper.get_openproject_updated(finding)
+            updated_map[finding.id] = updated
+        return updated_map
+
+    def assert_openproject_updated_map_unchanged(self, test_id, updated_map):
+        findings = Test.objects.get(id=test_id).finding_set.all()
+        for finding in findings:
+            logger.debug('finding!')
+            self.assertEquals(openproject_helper.get_openproject_updated(finding), updated_map[finding.id])
+
+    def assert_openproject_updated_map_changed(self, test_id, updated_map):
+        findings = Test.objects.get(id=test_id).finding_set.all()
+        for finding in findings:
+            logger.debug('finding!')
+            self.assertNotEquals(openproject_helper.get_openproject_updated(finding), updated_map[finding.id])
+
+    # Toggle epic mapping on openproject product
+    def toggle_openproject_project_epic_mapping(self, obj, value):
+        project = openproject_helper.get_openproject_project(obj)
+        project.enable_engagement_epic_mapping = value
+        project.save()
+
+    # Return a list of openproject issue in json format.
+    def get_epic_issues(self, engagement):
+        instance = openproject_helper.get_openproject_instance(engagement)
+        openproject = openproject_helper.get_openproject_connection(instance)
+        epic_id = openproject_helper.get_openproject_issue_key(engagement)
+        response = {}
+        if epic_id:
+            url = instance.url.strip('/') + '/rest/agile/1.0/epic/' + epic_id + '/issue'
+            response = openproject._session.get(url).json()
+        return response.get('issues', [])
+
+    # Determine whether an issue is in an epic
+    def assert_openproject_issue_in_epic(self, finding, engagement, issue_in_epic=True):
+        instance = openproject_helper.get_openproject_instance(engagement)
+        openproject = openproject_helper.get_openproject_connection(instance)
+        epic_id = openproject_helper.get_openproject_issue_key(engagement)
+        issue_id = openproject_helper.get_openproject_issue_key(finding)
+        epic_link_field = 'customfield_' + str(get_op_custom_field(openproject, 'Epic Link'))
+        url = instance.url.strip('/') + '/rest/api/latest/issue/' + issue_id
+        response = openproject._session.get(url).json().get('fields', {})
+        epic_link = response.get(epic_link_field, None)
+        if epic_id is None and epic_link is None or issue_in_epic:
+            self.assertTrue(epic_id == epic_link)
+        else:
+            self.assertTrue(epic_id != epic_link)
+
+    def assert_openproject_updated_change(self, old, new):
+        self.assertTrue(old != new)
+
 class DojoTestCase(TestCase, DojoTestUtilsMixin):
 
     def __init__(self, *args, **kwargs):
@@ -437,7 +708,7 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         return json.loads(response.content)
 
     def import_scan_with_params(self, filename, scan_type='ZAP Scan', engagement=1, minimum_severity='Low', active=True, verified=True,
-                                push_to_jira=None, endpoint_to_add=None, tags=None, close_old_findings=False, group_by=None, engagement_name=None,
+                                push_to_jira=None, push_to_openproject=None, endpoint_to_add=None, tags=None, close_old_findings=False, group_by=None, engagement_name=None,
                                 product_name=None, product_type_name=None, auto_create_context=None, expected_http_status_code=201, test_title=None,
                                 scan_date=None, service=None):
         payload = {
@@ -468,6 +739,9 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
 
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
+
         if endpoint_to_add is not None:
             payload['endpoint_to_add'] = endpoint_to_add
 
@@ -488,7 +762,8 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
 
         return self.import_scan(payload, expected_http_status_code)
 
-    def reimport_scan_with_params(self, test_id, filename, scan_type='ZAP Scan', engagement=1, minimum_severity='Low', active=True, verified=True, push_to_jira=None,
+    def reimport_scan_with_params(self, test_id, filename, scan_type='ZAP Scan', engagement=1, minimum_severity='Low', active=True, verified=True, 
+                                  push_to_jira=None, push_to_openproject=None, \
                                   tags=None, close_old_findings=True, group_by=None, engagement_name=None, scan_date=None,
                                   product_name=None, product_type_name=None, auto_create_context=None, expected_http_status_code=201, test_title=None):
         payload = {
@@ -521,6 +796,9 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
 
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
+
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
 
         if tags is not None:
             payload['tags'] = tags
@@ -559,21 +837,29 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         self.assertEqual(200, response.status_code, response.content[:1000])
         return response.data
 
-    def post_new_finding_api(self, finding_details, push_to_jira=None):
+    def post_new_finding_api(self, finding_details, push_to_jira=None, push_to_openproject=None):
         payload = copy.deepcopy(finding_details)
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
 
         # logger.debug('posting new finding push_to_jira: %s', payload.get('push_to_jira', None))
 
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
+
+        # logger.debug('posting new finding push_to_openproject: %s', payload.get('push_to_openproject', None))
+
         response = self.client.post(reverse('finding-list'), payload, format='json')
         self.assertEqual(201, response.status_code, response.content[:1000])
         return response.data
 
-    def put_finding_api(self, finding_id, finding_details, push_to_jira=None):
+    def put_finding_api(self, finding_id, finding_details, push_to_jira=None, push_to_openproject=None):
         payload = copy.deepcopy(finding_details)
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
+
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
 
         response = self.client.put(reverse('finding-list') + '%s/' % finding_id, payload, format='json')
         self.assertEqual(200, response.status_code, response.content[:1000])
@@ -584,10 +870,13 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         self.assertEqual(204, response.status_code, response.content[:1000])
         return response.data
 
-    def patch_finding_api(self, finding_id, finding_details, push_to_jira=None):
+    def patch_finding_api(self, finding_id, finding_details, push_to_jira=None, push_to_openproject=None):
         payload = copy.deepcopy(finding_details)
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
+
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
 
         response = self.client.patch(reverse('finding-list') + '%s/' % finding_id, payload, format='json')
         self.assertEqual(200, response.status_code, response.content[:1000])

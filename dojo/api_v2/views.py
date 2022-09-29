@@ -26,7 +26,7 @@ from dojo.models import Language_Type, Languages, Notifications, Product, Produc
     User, Stub_Finding, Finding_Template, Notes, \
     JIRA_Issue, Tool_Product_Settings, Tool_Configuration, Tool_Type, \
     Endpoint, JIRA_Project, JIRA_Instance, DojoMeta, Development_Environment, \
-    OpenProject_Instance, \
+    OpenProject_Instance, OpenProject_Project, OpenProject_Issue, \
     Dojo_User, Note_Type, System_Settings, App_Analysis, Endpoint_Status, \
     Sonarqube_Issue, Sonarqube_Issue_Transition, Regulation, \
     BurpRawRequestResponse, FileUpload, Product_Type_Member, Product_Member, Dojo_Group, \
@@ -47,6 +47,7 @@ from datetime import datetime
 from dojo.utils import get_period_counts_legacy, get_system_setting, get_setting, async_delete
 from dojo.api_v2 import serializers, permissions, prefetch, schema, mixins as dojo_mixins
 import dojo.jira_link.helper as jira_helper
+import dojo.openproject_link.helper as openproject_helper
 import logging
 import tagulous
 from dojo.product_type.queries import get_authorized_product_types, get_authorized_product_type_members, \
@@ -507,7 +508,13 @@ class FindingViewSet(prefetch.PrefetchListMixin,
         if get_system_setting('enable_jira') and jira_project:
             push_to_jira = push_to_jira or jira_project.push_all_issues
 
-        serializer.save(push_to_jira=push_to_jira)
+        # IF OpenProject is enabled and this product has a OpenProject configuration
+        push_to_openproject = serializer.validated_data.get('push_to_openproject')
+        openproject_project = openproject_helper.get_openproject_project(serializer.instance)
+        if get_system_setting('enable_openproject') and openproject_project:
+            push_to_openproject = push_to_openproject or openproject_project.push_all_issues
+
+        serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
     def get_queryset(self):
         findings = get_authorized_findings(Permissions.Finding_View).prefetch_related('endpoints',
@@ -518,6 +525,7 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                                                     'test',
                                                     'tags',
                                                     'jira_issue',
+                                                    'openproject_issue',
                                                     'finding_group_set',
                                                     'files',
                                                     'burprawrequestresponse_set',
@@ -664,6 +672,11 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                 jira_helper.add_comment(finding, note)
             elif finding.has_jira_group_issue:
                 jira_helper.add_comment(finding.finding_group, note)
+
+            if finding.has_openproject_issue:
+                openproject_helper.add_comment(finding, note)
+            elif finding.has_openporoject_group_issue:
+                openproject_helper.add_comment(finding.finding_group, note)
 
             serialized_note = serializers.NoteSerializer({
                 "author": author, "entry": entry,
@@ -1103,7 +1116,7 @@ class OpenProjectIssuesViewSet(mixins.ListModelMixin,
                         viewsets.GenericViewSet,
                         dojo_mixins.DeletePreviewModelMixin):
     serializer_class = serializers.OpenProjectIssueSerializer
-    queryset = JIRA_Issue.objects.none()
+    queryset = OpenProject_Issue.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'openproject_id', 'finding', 'engagement', 'finding_group')
     permission_classes = (IsAuthenticated, permissions.UserHasOpenProjectIssuePermission)
@@ -1121,9 +1134,9 @@ class OpenProjectProjectViewSet(mixins.ListModelMixin,
                   viewsets.GenericViewSet,
                   dojo_mixins.DeletePreviewModelMixin):
     serializer_class = serializers.OpenProjectProjectSerializer
-    queryset = JIRA_Project.objects.none()
+    queryset = OpenProject_Project.objects.none()
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('id', 'openproject_instance', 'product', 'engagement', 'component', 'project_key',
+    filter_fields = ('id', 'openproject_instance', 'product', 'engagement', 'project_key',
                      'push_all_issues', 'enable_engagement_epic_mapping',
                      'push_notes')
     permission_classes = (IsAuthenticated, permissions.UserHasOpenProjectProductPermission)
@@ -1844,10 +1857,14 @@ class TestImportViewSet(prefetch.PrefetchListMixin,
                                         'findings_affected__endpoint_status',
                                         'findings_affected__finding_meta',
                                         'findings_affected__jira_issue',
+                                        'findings_affected__openproject_issue',
                                         'findings_affected__burprawrequestresponse_set',
                                         'findings_affected__jira_issue',
                                         'findings_affected__jira_issue',
                                         'findings_affected__jira_issue',
+                                        'findings_affected__openproject_issue',
+                                        'findings_affected__openproject_issue',
+                                        'findings_affected__openproject_issue',
                                         'findings_affected__reviewers',
                                         'findings_affected__notes',
                                         'findings_affected__notes__author',
@@ -2061,7 +2078,16 @@ class ImportScanView(mixins.CreateModelMixin,
             push_to_jira = push_to_jira or jira_project.push_all_issues
 
         logger.debug('push_to_jira: %s', serializer.validated_data.get('push_to_jira'))
-        serializer.save(push_to_jira=push_to_jira)
+
+        openproject_driver = engagement if engagement else product if product else None
+        openproject_project = openproject_helper.get_openproject_project(openproject_driver) if openproject_driver else None
+
+        push_to_openproject = serializer.validated_data.get('push_to_openproject')
+        if get_system_setting('enable_openproject') and openproject_project:
+            push_to_openproject = push_to_openproject or openproject_project.push_all_issues
+
+        logger.debug('push_to_openproject: %s', serializer.validated_data.get('push_to_openproject'))
+        serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
     def get_queryset(self):
         return get_authorized_tests(Permissions.Import_Scan_Result)
@@ -2206,7 +2232,16 @@ class ReImportScanView(mixins.CreateModelMixin,
             push_to_jira = push_to_jira or jira_project.push_all_issues
 
         logger.debug('push_to_jira: %s', serializer.validated_data.get('push_to_jira'))
-        serializer.save(push_to_jira=push_to_jira)
+
+        openproject_driver = test if test else engagement if engagement else product if product else None
+        openproject_project = openproject_helper.get_openproject_project(openproject_driver) if openproject_driver else None
+
+        push_to_openproject = serializer.validated_data.get('push_to_openproject')
+        if get_system_setting('enable_openproject') and openproject_project:
+            push_to_openproject = push_to_openproject or openproject_project.push_all_issues
+
+        logger.debug('push_to_openproject: %s', serializer.validated_data.get('push_to_openproject'))
+        serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
 
 # Authorization: configuration

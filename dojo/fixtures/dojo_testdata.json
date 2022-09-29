@@ -179,6 +179,7 @@
       "msteams_url": "",
       "slack_token": "",
       "jira_minimum_severity": "Low",
+      "openproject_minimum_severity": "Low",
       "max_dupes": 1,
       "slack_username": "",
       "enable_msteams_notifications": false,
@@ -188,6 +189,7 @@
       "slack_channel": "",
       "mail_notifications_to": "",
       "enable_jira": false,
+      "enable_openproject": false,
       "enable_product_grade": true,
       "product_grade": "def grade_product(crit, high, med, low):\r\n    health=100\r\n    if crit > 0:\r\n        health = 40\r\n        health = health - ((crit - 1) * 5)\r\n    if high > 0:\r\n        if health == 100:\r\n            health = 60\r\n        health = health - ((high - 1) * 3)\r\n    if med > 0:\r\n        if health == 100:\r\n            health = 80\r\n        health = health - ((med - 1) * 2)\r\n    if low > 0:\r\n        if health == 100:\r\n            health = 95\r\n        health = health - low\r\n\r\n    if health < 5:\r\n        health = 5\r\n\r\n    return health",
       "product_grade_a": 90,
@@ -1637,6 +1639,67 @@
   },
   {
     "pk": 2,
+    "model": "dojo.openproject_instance",
+    "fields": {
+        "configuration_name": "Happy little OP 2",
+        "url": "https://op.fhi.mpg.de",
+        "username": "YOUR USERNAME",
+        "password": "YOUR API TOKEN",
+        "default_issue_type": "Bug",
+        "epic_name_id": 10011,
+        "open_status_key": 11,
+        "close_status_key": 41,
+        "info_mapping_severity": "Info",
+        "low_mapping_severity": "Low",
+        "medium_mapping_severity": "Medium",
+        "high_mapping_severity": "High",
+        "critical_mapping_severity": "Highest",
+        "finding_text": "",
+        "global_openproject_sla_notification": false
+    }
+  },
+  {
+    "pk": 3,
+    "model": "dojo.openproject_instance",
+    "fields": {
+      "configuration_name": "Happy little OP 3",
+      "username": "defect.dojo",
+      "default_issue_type": "BUG",
+      "finding_text": "",
+      "info_mapping_severity": "Trivial",
+      "low_mapping_severity": "test severity",
+      "url": "https://op.fhi.mpg.de",
+      "medium_mapping_severity": "test severity",
+      "open_status_key": 222,
+      "close_status_key": 223,
+      "critical_mapping_severity": "test severity",
+      "high_mapping_severity": "test severity",
+      "password": "user2",
+      "epic_name_id": 222
+    }
+  },
+  {
+    "pk": 4,
+    "model": "dojo.openproject_instance",
+    "fields": {
+      "configuration_name": "Happy little OP 4",
+      "username": "defect.dojo",
+      "default_issue_type": "Spike",
+      "finding_text": "",
+      "info_mapping_severity": "Trivial",
+      "low_mapping_severity": "test severity",
+      "url": "https://op.fhi.mpg.de",
+      "medium_mapping_severity": "test severity",
+      "open_status_key": 333,
+      "close_status_key": 334,
+      "critical_mapping_severity": "test severity",
+      "high_mapping_severity": "test severity",
+      "password": "user3",
+      "epic_name_id": 333
+    }
+  },
+  {
+    "pk": 2,
     "model": "dojo.jira_issue",
     "fields": {
       "jira_key": "222",
@@ -1662,6 +1725,33 @@
       "jira_key": "666",
       "finding": null,
       "jira_id": "666",
+      "engagement": null
+    }
+  },
+  {
+    "pk": 2,
+    "model": "dojo.openproject_issue",
+    "fields": {
+      "finding": 5,
+      "openproject_id": "2",
+      "engagement": null
+    }
+  },
+  {
+    "pk": 3,
+    "model": "dojo.openproject_issue",
+    "fields": {
+      "finding": null,
+      "openproject_id": "333",
+      "engagement": 1
+    }
+  },
+  {
+    "pk": 4,
+    "model": "dojo.openproject_issue",
+    "fields": {
+      "finding": null,
+      "openproject_id": "666",
       "engagement": null
     }
   },
@@ -1701,6 +1791,42 @@
       "component": "",
       "enable_engagement_epic_mapping": true,
       "jira_instance": 2,
+      "project_key": "NTEST"
+    }
+  },
+  {
+    "pk": 1,
+    "model": "dojo.openproject_project",
+    "fields": {
+      "push_notes": false,
+      "product": 1,
+      "push_all_issues": false,
+      "enable_engagement_epic_mapping": true,
+      "openproject_instance": 2,
+      "project_key": "key1"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "dojo.openproject_project",
+    "fields": {
+      "push_notes": true,
+      "product": 2,
+      "push_all_issues": false,
+      "enable_engagement_epic_mapping": false,
+      "openproject_instance": 2,
+      "project_key": "NTEST"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "dojo.openproject_project",
+    "fields": {
+      "push_notes": true,
+      "engagement": 3,
+      "push_all_issues": false,
+      "enable_engagement_epic_mapping": true,
+      "openproject_instance": 2,
       "project_key": "NTEST"
     }
   },
