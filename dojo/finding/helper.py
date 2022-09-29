@@ -289,8 +289,6 @@ def add_finding_to_auto_group(finding, group_by, **kwargs):
 @dojo_model_from_id
 def post_process_finding_save(finding, dedupe_option=True, false_history=False, rules_option=True, product_grading_option=True,
              issue_updater_option=True, push_to_jira=False, push_to_openproject=None, user=None, *args, **kwargs):
-    logger.info('--------------------post_process_finding_save--------------')
-
     system_settings = System_Settings.objects.get()
 
     # STEP 1 run all status changing tasks sequentially to avoid race conditions

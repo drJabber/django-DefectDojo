@@ -2781,10 +2781,8 @@ class Finding(models.Model):
 
         self.found_by.add(self.test.test_type)
 
-        logger.info(f'------------------------- SAVE ---------- {user}')
         # only perform post processing (in celery task) if needed. this check avoids submitting 1000s of tasks to celery that will do nothing
         if dedupe_option or false_history or issue_updater_option or product_grading_option or push_to_jira or push_to_openproject:
-            logger.info(f'------------------------- SAVE ---------- {str(self)}')
             finding_helper.post_process_finding_save(self, dedupe_option=dedupe_option, false_history=false_history, rules_option=rules_option, product_grading_option=product_grading_option,
                 issue_updater_option=issue_updater_option, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, user=user, *args, **kwargs)
         else:
