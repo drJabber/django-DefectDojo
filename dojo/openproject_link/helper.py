@@ -274,7 +274,7 @@ def get_openproject_issue_template(obj):
 
     # fallback to default as before
     if not template_dir:
-        template_dir = 'issue-trackers/openproject_full/'
+        template_dir = 'issue-trackers/openproject/openproject_full/'
 
     if isinstance(obj, Finding_Group):
         return os.path.join(template_dir, 'openproject-finding-group-description.tpl')

@@ -145,7 +145,7 @@ def add_external_issue_github(find, prod, eng):
 
 
 def github_body(find):
-    template = 'issue-trackers/jira_full/jira-description.tpl'
+    template = 'issue-trackers/jira/jira_full/jira-description.tpl'
     kwargs = {}
     kwargs['finding'] = find
     return render_to_string(template, kwargs)

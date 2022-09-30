@@ -99,7 +99,7 @@ Or
 
 ## Customize OpenProject issue description
 
-By default Defect Dojo uses the `dojo/templates/issue-trackers/openproject_full/openproject-description.tpl` template to render the description of the 'to be' created OpenProject issue.
+By default Defect Dojo uses the `dojo/templates/issue-trackers/openproject/openproject_full/openproject-description.tpl` template to render the description of the 'to be' created OpenProject issue.
 This file can be modified to your needs, rebuild all containers afterwards. There's also a more limited template available, which can be chosen when
 configuring a OpenProject Instance or OpenProject Project for a Product or Engagement:
 
