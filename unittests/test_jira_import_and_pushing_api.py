@@ -323,6 +323,7 @@ class JIRAImportAndPushTestApi(DojoVCRAPITestCase):
         self.assert_jira_group_issue_count_in_test(test_id1, 0)
 
     def test_create_edit_update_finding(self):
+        logger.info(f"! - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding finding_id = {finding_id}")
         import0 = self.import_scan_with_params(self.zap_sample5_filename)
         test_id = import0['test']
         self.assert_jira_issue_count_in_test(test_id, 0)
