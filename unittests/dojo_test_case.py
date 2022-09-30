@@ -1,8 +1,9 @@
 import os
 from django.utils import timezone
 from vcr_unittest import VCRTestCase
-from dojo.models import DojoMeta, Product_Type, Test_Type, User, Endpoint, Notes, Finding, Endpoint_Status, Test, JIRA_Issue, JIRA_Project, \
-                        Product
+from dojo.models import DojoMeta, Product_Type, Test_Type, User, Endpoint, Notes, Finding, Endpoint_Status, Test, \
+    JIRA_Issue, JIRA_Project, OpenProject_Issue, OpenProject_Project, \
+    Product
 from dojo.models import System_Settings, Engagement
 from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
@@ -849,6 +850,7 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
 
         # logger.debug('posting new finding push_to_openproject: %s', payload.get('push_to_openproject', None))
 
+        logger.debug(f"!!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         response = self.client.post(reverse('finding-list'), payload, format='json')
         self.assertEqual(201, response.status_code, response.content[:1000])
         return response.data

@@ -1341,6 +1341,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
         # If we need to push to JIRA/openproject, an extra save call is needed.
         # Also if we need to update the mitigation date of the finding.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
+        logger.debug(f"!!!!!!!!!!!!!!!!!!!! findingserializer.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_jira or push_to_openproject:
             instance.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
