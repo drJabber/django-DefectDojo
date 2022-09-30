@@ -854,9 +854,9 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
 
         # logger.debug('posting new finding push_to_openproject: %s', payload.get('push_to_openproject', None))
 
-        logger.error(f"4 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+        logger.error(f"4 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update payload = {payload}")
         response = self.client.post(reverse('finding-list'), payload, format='json')
-        logger.error(f"5 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+        logger.error(f"5 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update  payload = {payload}")
         self.assertEqual(201, response.status_code, response.content[:1000])
         return response.data
 

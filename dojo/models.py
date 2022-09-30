@@ -2777,19 +2777,19 @@ class Finding(models.Model):
             elif (self.file_path is not None):
                 self.static_finding = True
 
-        logger.error(f"7 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+        logger.error(f"7 - !!!!!!!!!!!!!!!!!!!! finding.save id = {self.id}")
         logger.debug("Saving finding of id " + str(self.id) + " dedupe_option:" + str(dedupe_option) + " (self.pk is %s)", "None" if self.pk is None else "not None")
         super(Finding, self).save(*args, **kwargs)
 
-        logger.error(f"8 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+        logger.error(f"8 - !!!!!!!!!!!!!!!!!!!! finding.save id = {self.id}")
         self.found_by.add(self.test.test_type)
 
         # only perform post processing (in celery task) if needed. this check avoids submitting 1000s of tasks to celery that will do nothing
         if dedupe_option or false_history or issue_updater_option or product_grading_option or push_to_jira or push_to_openproject:
-            logger.error(f"9 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+            logger.error(f"9 - !!!!!!!!!!!!!!!!!!!! finding.save  id = {self.id}")
             finding_helper.post_process_finding_save(self, dedupe_option=dedupe_option, false_history=false_history, rules_option=rules_option, product_grading_option=product_grading_option,
                 issue_updater_option=issue_updater_option, push_to_jira=push_to_jira, push_to_openproject=push_to_openproject, user=user, *args, **kwargs)
-            logger.error(f"12 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+            logger.error(f"12 - !!!!!!!!!!!!!!!!!!!! finding.save  id = {self.id}")
         else:
             logger.debug('no options selected that require finding post processing')
 

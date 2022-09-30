@@ -322,7 +322,7 @@ def post_process_finding_save(finding, dedupe_option=True, false_history=False, 
             deduplicationLogger.debug("skipping product grading because it's disabled in system settings")
 
     # Adding a snippet here for push to JIRA so that it's in one place
-    logger.error(f"10 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+    logger.error(f"10 - !!!!!!!!!!!!!!!!!!!! finding.save  id = {finding.id}")
     if push_to_jira:
         logger.debug('pushing finding %s to jira from finding.save()', finding.pk)
         import dojo.jira_link.helper as jira_helper
@@ -336,7 +336,7 @@ def post_process_finding_save(finding, dedupe_option=True, false_history=False, 
             jira_helper.push_to_jira(finding.finding_group)
 
     # Adding a snippet here for push to OpenProject so that it's in one place
-    logger.error(f"11 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+    logger.error(f"11 - !!!!!!!!!!!!!!!!!!!! finding.save  id = {finding.id}")
     if push_to_openproject:
         logger.debug('pushing finding %s to openproject from finding.save()', finding.pk)
         import dojo.openproject_link.helper as openproject_helper
