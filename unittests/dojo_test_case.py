@@ -839,19 +839,24 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         return response.data
 
     def post_new_finding_api(self, finding_details, push_to_jira=None, push_to_openproject=None):
+        logger.debug(f"1 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         payload = copy.deepcopy(finding_details)
+
+        logger.debug(f"2 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
 
         # logger.debug('posting new finding push_to_jira: %s', payload.get('push_to_jira', None))
 
+        logger.debug(f"3 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_openproject is not None:
             payload['push_to_openproject'] = push_to_openproject
 
         # logger.debug('posting new finding push_to_openproject: %s', payload.get('push_to_openproject', None))
 
-        logger.debug(f"!!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
+        logger.debug(f"4 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         response = self.client.post(reverse('finding-list'), payload, format='json')
+        logger.debug(f"5 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         self.assertEqual(201, response.status_code, response.content[:1000])
         return response.data
 
@@ -880,6 +885,7 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         if push_to_openproject is not None:
             payload['push_to_openproject'] = push_to_openproject
 
+        logger.debug(f"+++++++++++++++++++++ patch_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         response = self.client.patch(reverse('finding-list') + '%s/' % finding_id, payload, format='json')
         self.assertEqual(200, response.status_code, response.content[:1000])
         return response.data
