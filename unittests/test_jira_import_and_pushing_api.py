@@ -352,6 +352,7 @@ class JIRAImportAndPushTestApi(DojoVCRAPITestCase):
         finding_details['title'] = 'jira api test 2'
         logger.error(f"0 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api finding_id = {finding_id}")
         self.post_new_finding_api(finding_details, push_to_jira=True)
+        logger.error(f"15 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api finding_id = {finding_id}")
         self.assert_jira_issue_count_in_test(test_id, 1)
         self.assert_jira_group_issue_count_in_test(test_id, 0)
 
