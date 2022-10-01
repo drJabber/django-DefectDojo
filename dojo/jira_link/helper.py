@@ -294,7 +294,7 @@ def get_jira_issue_template(obj):
 
     # fallback to default as before
     if not template_dir:
-        template_dir = 'issue-trackers/jira_full/'
+        template_dir = 'issue-trackers/jira/jira_full/'
 
     if isinstance(obj, Finding_Group):
         return os.path.join(template_dir, 'jira-finding-group-description.tpl')

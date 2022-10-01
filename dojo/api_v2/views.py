@@ -2079,15 +2079,16 @@ class ImportScanView(mixins.CreateModelMixin,
 
         logger.debug('push_to_jira: %s', serializer.validated_data.get('push_to_jira'))
 
-        openproject_driver = engagement if engagement else product if product else None
-        openproject_project = openproject_helper.get_openproject_project(openproject_driver) if openproject_driver else None
+        # openproject_driver = engagement if engagement else product if product else None
+        # openproject_project = openproject_helper.get_openproject_project(openproject_driver) if openproject_driver else None
 
-        push_to_openproject = serializer.validated_data.get('push_to_openproject')
-        if get_system_setting('enable_openproject') and openproject_project:
-            push_to_openproject = push_to_openproject or openproject_project.push_all_issues
+        # push_to_openproject = serializer.validated_data.get('push_to_openproject')
+        # if get_system_setting('enable_openproject') and openproject_project:
+        #     push_to_openproject = push_to_openproject or openproject_project.push_all_issues
 
-        logger.debug('push_to_openproject: %s', serializer.validated_data.get('push_to_openproject'))
-        serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        # logger.debug('push_to_openproject: %s', serializer.validated_data.get('push_to_openproject'))
+        # serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        serializer.save(push_to_jira=push_to_jira)
 
     def get_queryset(self):
         return get_authorized_tests(Permissions.Import_Scan_Result)
