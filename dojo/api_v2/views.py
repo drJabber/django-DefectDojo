@@ -664,8 +664,8 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                 return Response(new_note.errors,
                     status=status.HTTP_400_BAD_REQUEST)
 
-            logger.error(f'-------------------- finding-notes {finding.id}: {entry}, {author}, {private}, {note_type}')
             author = request.user
+            logger.error(f'-------------------- finding-notes {finding.id}: {entry}, {author}, {private}, {note_type}')
             note = Notes(entry=entry, author=author, private=private, note_type=note_type)
             logger.error(f'-------------------- finding-notes {finding.id}: note.save')
             note.save()
