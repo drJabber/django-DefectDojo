@@ -2087,8 +2087,7 @@ class ImportScanView(mixins.CreateModelMixin,
             push_to_openproject = push_to_openproject or openproject_project.push_all_issues
 
         logger.debug('push_to_openproject: %s', serializer.validated_data.get('push_to_openproject'))
-        # serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
-        serializer.save(push_to_jira=push_to_jira)
+        serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
     def get_queryset(self):
         return get_authorized_tests(Permissions.Import_Scan_Result)
