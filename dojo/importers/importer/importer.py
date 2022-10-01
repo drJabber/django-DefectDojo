@@ -319,7 +319,7 @@ class DojoDefaultImporter(object):
                                                             verified, minimum_severity=minimum_severity,
                                                             endpoints_to_add=endpoints_to_add, 
                                                             push_to_jira=push_to_jira, 
-                                                            # push_to_openproject=push_to_openproject,
+                                                            push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=False)
                 # Since I dont want to wait until the task is done right now, save the id
                 # So I can check on the task later
@@ -338,7 +338,7 @@ class DojoDefaultImporter(object):
                                                             verified, minimum_severity=minimum_severity,
                                                             endpoints_to_add=endpoints_to_add, 
                                                             push_to_jira=push_to_jira, 
-                                                            # push_to_openproject=push_to_openproject,
+                                                            push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=True)
 
         closed_findings = []
