@@ -1155,7 +1155,100 @@
       "last_reviewed": null
     }
   },
-
+  {
+    "pk": 8,
+    "model": "dojo.finding",
+    "fields": {
+      "last_reviewed_by": null,
+      "reviewers": [],
+      "static_finding": false,
+      "date": "2018-01-01",
+      "references": "",
+      "files": [],
+      "payload": null,
+      "under_defect_review": false,
+      "impact": "High",
+      "false_p": false,
+      "verified": false,
+      "severity": "High",
+      "title": "High Impact Test Finding (openproject)",
+      "param": null,
+      "duplicate": true,
+      "mitigation": "test mitigation",
+      "found_by": [
+        1
+      ],
+      "numerical_severity": "S0",
+      "test": 3,
+      "out_of_scope": false,
+      "cwe": null,
+      "file_path": "",
+      "duplicate_finding": 2,
+      "description": "test finding",
+      "mitigated_by": null,
+      "reporter": 1,
+      "mitigated": null,
+      "active": false,
+      "line": null,
+      "under_review": false,
+      "defect_review_requested_by": 1,
+      "review_requested_by": 1,
+      "thread_id": 11,
+      "url": null,
+      "notes": [],
+      "dynamic_finding": false,
+      "hash_code": "5d368a051fdec959e08315a32ef633ba5711bed6e8e75319ddee2cab4d4608c7",
+      "endpoints": [],
+      "last_reviewed": null
+    }
+  },
+  {
+    "pk": 9,
+    "model": "dojo.finding",
+    "fields": {
+      "last_reviewed_by": null,
+      "reviewers": [],
+      "static_finding": false,
+      "date": "2018-01-01",
+      "references": "",
+      "files": [],
+      "payload": null,
+      "under_defect_review": false,
+      "impact": "High",
+      "false_p": false,
+      "verified": false,
+      "severity": "High",
+      "title": "High Impact Test Finding (openproject + jira)",
+      "param": null,
+      "duplicate": true,
+      "mitigation": "test mitigation",
+      "found_by": [
+        1
+      ],
+      "numerical_severity": "S0",
+      "test": 3,
+      "out_of_scope": false,
+      "cwe": null,
+      "file_path": "",
+      "duplicate_finding": 2,
+      "description": "test finding",
+      "mitigated_by": null,
+      "reporter": 1,
+      "mitigated": null,
+      "active": false,
+      "line": null,
+      "under_review": false,
+      "defect_review_requested_by": 1,
+      "review_requested_by": 1,
+      "thread_id": 11,
+      "url": null,
+      "notes": [],
+      "dynamic_finding": false,
+      "hash_code": "5d368a051fdec959e08315a32ef633ba5711bed6e8e75319ddee2cab4d4608c7",
+      "endpoints": [],
+      "last_reviewed": null
+    }
+  },
   {
     "pk": 22,
     "model": "dojo.finding",
@@ -1729,10 +1822,20 @@
     }
   },
   {
+    "pk": 5,
+    "model": "dojo.jira_issue",
+    "fields": {
+      "jira_key": "555",
+      "finding": 9,
+      "jira_id": "3",
+      "engagement": null
+    }
+  },
+  {
     "pk": 2,
     "model": "dojo.openproject_issue",
     "fields": {
-      "finding": 5,
+      "finding": 8,
       "openproject_id": "2",
       "engagement": null
     }
