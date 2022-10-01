@@ -839,24 +839,19 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         return response.data
 
     def post_new_finding_api(self, finding_details, push_to_jira=None, push_to_openproject=None):
-        logger.error(f"1 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         payload = copy.deepcopy(finding_details)
 
-        logger.error(f"2 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
 
         # logger.debug('posting new finding push_to_jira: %s', payload.get('push_to_jira', None))
 
-        logger.error(f"3 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_openproject is not None:
             payload['push_to_openproject'] = push_to_openproject
 
         # logger.debug('posting new finding push_to_openproject: %s', payload.get('push_to_openproject', None))
 
-        logger.error(f"4 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update payload = {payload}")
         response = self.client.post(reverse('finding-list'), payload, format='json')
-        logger.error(f"5 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api.update  payload = {payload}")
         self.assertEqual(201, response.status_code, response.content[:1000])
         return response.data
 

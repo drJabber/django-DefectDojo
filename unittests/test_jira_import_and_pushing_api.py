@@ -323,15 +323,10 @@ class JIRAImportAndPushTestApi(DojoVCRAPITestCase):
         self.assert_jira_group_issue_count_in_test(test_id1, 0)
 
     def test_create_edit_update_finding(self):
-        logger.error(f"!0 - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding")
         import0 = self.import_scan_with_params(self.zap_sample5_filename)
-        logger.error(f"!1 - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding")
         test_id = import0['test']
-        logger.error(f"!2 - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding test_id={test_id} ")
         self.assert_jira_issue_count_in_test(test_id, 0)
-        logger.error(f"!3 - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding test_id={test_id} ")
         self.assert_jira_group_issue_count_in_test(test_id, 0)
-        logger.error(f"!4 - !!!!!!!!!!!!!!!!!!!! test_create_edit_update_finding test_id={test_id} ")
 
         findings = self.get_test_findings_api(test_id)
 
@@ -350,9 +345,7 @@ class JIRAImportAndPushTestApi(DojoVCRAPITestCase):
         self.assert_jira_group_issue_count_in_test(test_id, 0)
 
         finding_details['title'] = 'jira api test 2'
-        logger.error(f"0 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api test_id={test_id}")
         self.post_new_finding_api(finding_details, push_to_jira=True)
-        logger.error(f"15 - !!!!!!!!!!!!!!!!!!!! post_new_finding_api test_id={test_id}")
         self.assert_jira_issue_count_in_test(test_id, 1)
         self.assert_jira_group_issue_count_in_test(test_id, 0)
 

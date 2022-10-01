@@ -1341,14 +1341,11 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
         # If we need to push to JIRA/openproject, an extra save call is needed.
         # Also if we need to update the mitigation date of the finding.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
-        logger.error(f"6 - !!!!!!!!!!!!!!!!!!!! findingserializer.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         if push_to_jira or push_to_openproject:
             instance.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
-        logger.error(f"13 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         # not sure why we are returning a tag_object, but don't want to change too much now as we're just fixing a bug
         tag_object = self._save_tags(instance, to_be_tagged)
-        logger.error(f"14 - !!!!!!!!!!!!!!!!!!!! finding.save push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         return tag_object
 
     def validate(self, data):
