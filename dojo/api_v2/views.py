@@ -678,7 +678,7 @@ class FindingViewSet(prefetch.PrefetchListMixin,
             elif finding.has_jira_group_issue:
                 jira_helper.add_comment(finding.finding_group, note)
 
-            logger.error(f'-------------------- finding-notes {finding.id}: op - {finding.has_openproject_issue}, opg - {finding.has_openporoject_group_issue}')
+            logger.error(f'-------------------- finding-notes {finding.id}: op - {finding.has_openproject_issue}, opg - {finding.has_openproject_group_issue}')
             if finding.has_openproject_issue:
                 logger.error(f'-------------------- finding-notes {finding.id}: op')
                 openproject_helper.add_comment(finding, note)
