@@ -1674,7 +1674,7 @@ class ImportScanSerializer(serializers.Serializer):
                                                                                             branch_tag=branch_tag, build_id=build_id,
                                                                                             commit_hash=commit_hash,
                                                                                             push_to_jira=push_to_jira,
-                                                                                            # push_to_openproject=push_to_openproject,
+                                                                                            push_to_openproject=push_to_openproject,
                                                                                             close_old_findings=close_old_findings,
                                                                                             group_by=group_by,
                                                                                             api_scan_configuration=api_scan_configuration,

@@ -318,7 +318,8 @@ class DojoDefaultImporter(object):
                 result = self.process_parsed_findings(test, findings_list, scan_type, user, active,
                                                             verified, minimum_severity=minimum_severity,
                                                             endpoints_to_add=endpoints_to_add, 
-                                                            push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
+                                                            push_to_jira=push_to_jira, 
+                                                            # push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=False)
                 # Since I dont want to wait until the task is done right now, save the id
                 # So I can check on the task later
@@ -336,7 +337,8 @@ class DojoDefaultImporter(object):
             new_findings = self.process_parsed_findings(test, parsed_findings, scan_type, user, active,
                                                             verified, minimum_severity=minimum_severity,
                                                             endpoints_to_add=endpoints_to_add, 
-                                                            push_to_jira=push_to_jira, push_to_openproject=push_to_openproject,
+                                                            push_to_jira=push_to_jira, 
+                                                            # push_to_openproject=push_to_openproject,
                                                             group_by=group_by, now=now, service=service, scan_date=scan_date, sync=True)
 
         closed_findings = []
@@ -356,7 +358,8 @@ class DojoDefaultImporter(object):
             logger.debug('IMPORT_SCAN: Updating Import History')
             test_import = importer_utils.update_import_history(Test_Import.IMPORT_TYPE, active, verified, tags, minimum_severity,
                                                                 endpoints_to_add, version, branch_tag, build_id, commit_hash,
-                                                                push_to_jira, push_to_openproject, 
+                                                                push_to_jira, 
+                                                                push_to_openproject, 
                                                                 close_old_findings, test, new_findings, closed_findings)
 
         logger.debug('IMPORT_SCAN: Generating notifications')
