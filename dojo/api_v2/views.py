@@ -508,12 +508,13 @@ class FindingViewSet(prefetch.PrefetchListMixin,
         if get_system_setting('enable_jira') and jira_project:
             push_to_jira = push_to_jira or jira_project.push_all_issues
 
-        # IF OpenProject is enabled and this product has a OpenProject configuration
-        push_to_openproject = serializer.validated_data.get('push_to_openproject')
-        openproject_project = openproject_helper.get_openproject_project(serializer.instance)
-        if get_system_setting('enable_openproject') and openproject_project:
-            push_to_openproject = push_to_openproject or openproject_project.push_all_issues
+        # # IF OpenProject is enabled and this product has a OpenProject configuration
+        # push_to_openproject = serializer.validated_data.get('push_to_openproject')
+        # openproject_project = openproject_helper.get_openproject_project(serializer.instance)
+        # if get_system_setting('enable_openproject') and openproject_project:
+        #     push_to_openproject = push_to_openproject or openproject_project.push_all_issues
 
+        # serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
         serializer.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
 
     def get_queryset(self):
@@ -525,7 +526,7 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                                                     'test',
                                                     'tags',
                                                     'jira_issue',
-                                                    'openproject_issue',
+                                                    # 'openproject_issue',
                                                     'finding_group_set',
                                                     'files',
                                                     'burprawrequestresponse_set',

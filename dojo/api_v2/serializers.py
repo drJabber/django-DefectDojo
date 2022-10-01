@@ -1260,7 +1260,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     request_response = serializers.SerializerMethodField()
     accepted_risks = RiskAcceptanceSerializer(many=True, read_only=True, source='risk_acceptance_set')
     push_to_jira = serializers.BooleanField(default=False)
-    push_to_openproject = serializers.BooleanField(default=False)
+    # push_to_openproject = serializers.BooleanField(default=False)
     age = serializers.IntegerField(read_only=True)
     sla_days_remaining = serializers.IntegerField(read_only=True)
     finding_meta = FindingMetaSerializer(read_only=True, many=True)
@@ -1268,8 +1268,8 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     # for backwards compatibility
     jira_creation = serializers.SerializerMethodField(read_only=True)
     jira_change = serializers.SerializerMethodField(read_only=True)
-    openproject_creation = serializers.SerializerMethodField(read_only=True)
-    openproject_change = serializers.SerializerMethodField(read_only=True)
+    # openproject_creation = serializers.SerializerMethodField(read_only=True)
+    # openproject_change = serializers.SerializerMethodField(read_only=True)
     display_status = serializers.SerializerMethodField()
     finding_groups = FindingGroupSerializer(source='finding_group_set', many=True, read_only=True)
     vulnerability_ids = VulnerabilityIdSerializer(source='vulnerability_id_set', many=True, required=False)
@@ -1288,15 +1288,15 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     def get_jira_change(self, obj):
         return jira_helper.get_jira_change(obj)
 
-    @extend_schema_field(serializers.DateTimeField())
-    @swagger_serializer_method(serializers.DateTimeField())
-    def get_openproject_creation(self, obj):
-        return openproject_helper.get_openproject_creation(obj)
+    # @extend_schema_field(serializers.DateTimeField())
+    # @swagger_serializer_method(serializers.DateTimeField())
+    # def get_openproject_creation(self, obj):
+    #     return openproject_helper.get_openproject_creation(obj)
 
-    @extend_schema_field(serializers.DateTimeField())
-    @swagger_serializer_method(serializers.DateTimeField())
-    def get_openproject_change(self, obj):
-        return openproject_helper.get_openproject_change(obj)
+    # @extend_schema_field(serializers.DateTimeField())
+    # @swagger_serializer_method(serializers.DateTimeField())
+    # def get_openproject_change(self, obj):
+    #     return openproject_helper.get_openproject_change(obj)
 
     @extend_schema_field(FindingRelatedFieldsSerializer)
     @swagger_serializer_method(FindingRelatedFieldsSerializer)
@@ -1323,9 +1323,9 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
         # TODO: JIRA can we remove this is_push_all_issues, already checked in apiv2 viewset?
         push_to_jira = validated_data.pop('push_to_jira') or jira_helper.is_push_all_issues(instance)
 
-        # pop push_to_openproject so it won't get send to the model as a field
-        # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
-        push_to_openproject = validated_data.pop('push_to_openproject') or openproject_helper.is_push_all_issues(instance)
+        # # pop push_to_openproject so it won't get send to the model as a field
+        # # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
+        # push_to_openproject = validated_data.pop('push_to_openproject') or openproject_helper.is_push_all_issues(instance)
 
         # Save vulnerability ids and pop them
         if 'vulnerability_id_set' in validated_data:
@@ -1341,8 +1341,10 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
         # If we need to push to JIRA/openproject, an extra save call is needed.
         # Also if we need to update the mitigation date of the finding.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
-        if push_to_jira or push_to_openproject:
-            instance.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        # if push_to_jira or push_to_openproject:
+        #     instance.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        if push_to_jira:
+            instance.save(push_to_jira=push_to_jira)
 
         # not sure why we are returning a tag_object, but don't want to change too much now as we're just fixing a bug
         tag_object = self._save_tags(instance, to_be_tagged)
@@ -1414,7 +1416,7 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         default=None)
     tags = TagListSerializerField(required=False)
     push_to_jira = serializers.BooleanField(default=False)
-    push_to_openproject = serializers.BooleanField(default=False)
+    # push_to_openproject = serializers.BooleanField(default=False)
     vulnerability_ids = VulnerabilityIdSerializer(source='vulnerability_id_set', many=True, required=False)
     reporter = serializers.PrimaryKeyRelatedField(required=False, queryset=User.objects.all())
 
@@ -1434,8 +1436,8 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         # pop push_to_jira so it won't get send to the model as a field
         push_to_jira = validated_data.pop('push_to_jira')
 
-        # pop push_to_openproject so it won't get send to the model as a field
-        push_to_openproject = validated_data.pop('push_to_openproject')
+        # # pop push_to_openproject so it won't get send to the model as a field
+        # push_to_openproject = validated_data.pop('push_to_openproject')
 
         # Save vulnerability ids and pop them
         if 'vulnerability_id_set' in validated_data:
@@ -1457,13 +1459,15 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
         # TODO: JIRA can we remove this is_push_all_issues, already checked in apiv2 viewset?
         push_to_jira = push_to_jira or jira_helper.is_push_all_issues(new_finding)
 
-        # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
-        push_to_openproject = push_to_openproject or openproject_helper.is_push_all_issues(new_finding)
+        # # TODO: OpenProject can we remove this is_push_all_issues, already checked in apiv2 viewset?
+        # push_to_openproject = push_to_openproject or openproject_helper.is_push_all_issues(new_finding)
 
         # If we need to push to JIRA/OpenProject, an extra save call is needed.
         # TODO try to combine create and save, but for now I'm just fixing a bug and don't want to change to much
-        if push_to_jira or push_to_openproject or new_finding:
-            new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        # if push_to_jira or push_to_openproject or new_finding:
+        #     new_finding.save(push_to_jira=push_to_jira, push_to_openproject=push_to_openproject)
+        if push_to_jira or new_finding:
+            new_finding.save(push_to_jira=push_to_jira)
 
         # not sure why we are returning a tag_object, but don't want to change too much now as we're just fixing a bug
         tag_object = self._save_tags(new_finding, to_be_tagged)
