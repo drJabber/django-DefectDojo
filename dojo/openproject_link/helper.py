@@ -1052,6 +1052,9 @@ def openproject_get_issue(openproject_project, issue_key):
 @dojo_model_from_id(model=Notes, parameter=1)
 @dojo_model_from_id
 def add_comment(obj, note, force_push=False, **kwargs):
+    
+    logger.error(f'Openproject add comment for finding {obj.id}, {note}')
+
     if not is_openproject_configured_and_enabled(obj):
         return False
 
