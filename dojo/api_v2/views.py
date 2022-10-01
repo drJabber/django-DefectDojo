@@ -654,6 +654,7 @@ class FindingViewSet(prefetch.PrefetchListMixin,
     def notes(self, request, pk=None):
         finding = self.get_object()
         if request.method == 'POST':
+            logger.error(f'-------------------- finding-notes')
             new_note = serializers.AddNewNoteOptionSerializer(data=request.data)
             if new_note.is_valid():
                 entry = new_note.validated_data['entry']
@@ -663,28 +664,38 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                 return Response(new_note.errors,
                     status=status.HTTP_400_BAD_REQUEST)
 
+            logger.error(f'-------------------- finding-notes {finding.id}: {entry}, {author}, {private}, {note_type}')
             author = request.user
             note = Notes(entry=entry, author=author, private=private, note_type=note_type)
+            logger.error(f'-------------------- finding-notes {finding.id}: note.save')
             note.save()
             finding.notes.add(note)
 
             if finding.has_jira_issue:
+                logger.error(f'-------------------- finding-notes {finding.id}: jira')
                 jira_helper.add_comment(finding, note)
+                logger.error(f'-------------------- finding-notes {finding.id}: after jira add')
             elif finding.has_jira_group_issue:
                 jira_helper.add_comment(finding.finding_group, note)
 
+            logger.error(f'-------------------- finding-notes {finding.id}: op - {finding.has_openproject_issue}, opg - {finding.has_openporoject_group_issue}')
             if finding.has_openproject_issue:
+                logger.error(f'-------------------- finding-notes {finding.id}: op')
                 openproject_helper.add_comment(finding, note)
+                logger.error(f'-------------------- finding-notes {finding.id}: after op add')
             elif finding.has_openporoject_group_issue:
                 openproject_helper.add_comment(finding.finding_group, note)
 
+            logger.error(f'-------------------- finding-notes {finding.id}: serializer')
             serialized_note = serializers.NoteSerializer({
                 "author": author, "entry": entry,
                 "private": private
             })
+            logger.error(f'-------------------- finding-notes {finding.id}: finding serializer')
             result = serializers.FindingToNotesSerializer({
                 "finding_id": finding, "notes": [serialized_note.data]
             })
+            logger.error(f'-------------------- finding-notes {finding.id}: before response')
             return Response(serialized_note.data,
                 status=status.HTTP_201_CREATED)
         notes = finding.notes.all()
