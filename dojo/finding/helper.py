@@ -334,18 +334,18 @@ def post_process_finding_save(finding, dedupe_option=True, false_history=False, 
         elif finding.finding_group:
             jira_helper.push_to_jira(finding.finding_group)
 
-    # # Adding a snippet here for push to OpenProject so that it's in one place
-    # if push_to_openproject:
-    #     logger.debug('pushing finding %s to openproject from finding.save()', finding.pk)
-    #     import dojo.openproject_link.helper as openproject_helper
+    # Adding a snippet here for push to OpenProject so that it's in one place
+    if push_to_openproject:
+        logger.debug('pushing finding %s to openproject from finding.save()', finding.pk)
+        import dojo.openproject_link.helper as openproject_helper
 
-    #     # current approach is that whenever a finding is in a group, the group will be pushed to OpenProject
-    #     # based on feedback we could introduct another push_group_to_openproject boolean everywhere
-    #     # but what about the push_all boolean? Let's see how this works for now and get some feedback.
-    #     if finding.has_openproject_issue or not finding.finding_group:
-    #         openproject_helper.push_to_openproject(finding)
-    #     elif finding.finding_group:
-    #         openproject_helper.push_to_openproject(finding.finding_group)
+        # current approach is that whenever a finding is in a group, the group will be pushed to OpenProject
+        # based on feedback we could introduct another push_group_to_openproject boolean everywhere
+        # but what about the push_all boolean? Let's see how this works for now and get some feedback.
+        if finding.has_openproject_issue or not finding.finding_group:
+            openproject_helper.push_to_openproject(finding)
+        elif finding.finding_group:
+            openproject_helper.push_to_openproject(finding.finding_group)
 
 
 @receiver(pre_delete, sender=Finding)

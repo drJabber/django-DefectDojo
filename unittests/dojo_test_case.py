@@ -880,7 +880,6 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
         if push_to_openproject is not None:
             payload['push_to_openproject'] = push_to_openproject
 
-        logger.debug(f"+++++++++++++++++++++ patch_finding_api.update push_to_jira={push_to_jira}, push_to_openproject={push_to_openproject}")
         response = self.client.patch(reverse('finding-list') + '%s/' % finding_id, payload, format='json')
         self.assertEqual(200, response.status_code, response.content[:1000])
         return response.data
