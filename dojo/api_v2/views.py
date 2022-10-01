@@ -683,7 +683,7 @@ class FindingViewSet(prefetch.PrefetchListMixin,
                 logger.error(f'-------------------- finding-notes {finding.id}: op')
                 openproject_helper.add_comment(finding, note)
                 logger.error(f'-------------------- finding-notes {finding.id}: after op add')
-            elif finding.has_openporoject_group_issue:
+            elif finding.has_openproject_group_issue:
                 openproject_helper.add_comment(finding.finding_group, note)
 
             logger.error(f'-------------------- finding-notes {finding.id}: serializer')
