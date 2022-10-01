@@ -524,7 +524,7 @@ def add_findings(request, tid):
                         openproject_helper.finding_unlink_openproject(request, new_finding)
                         openproject_message = 'Link to OpenProject issue removed successfully.'
 
-                    elif new_openproject_issue_key != new_finding.openproject_issue.openproject_key:
+                    elif new_openproject_issue_key != new_finding.openproject_issue.openproject_id:
                         openproject_helper.finding_unlink_openproject(request, new_finding)
                         openproject_helper.finding_link_openproject(request, new_finding, new_openproject_issue_key)
                         openproject_message = 'Changed OpenProject link successfully.'

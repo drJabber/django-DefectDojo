@@ -776,7 +776,7 @@ def get_openproject_issue_from_openproject(find):
     op_issue = find.openproject_issue
     if not openproject_project:
         logger.error("Unable to retrieve latest status change from OpenProject %s for finding %s as there is no OpenProject_Project configured for this finding.", op_issue.openproject_id, format(find.id))
-        log_openproject_alert("Unable to retrieve latest status change from OpenProject %s for finding %s as there is no OpenProject_Project configured for this finding." % (op_issue.openproject_key, find), find)
+        log_openproject_alert("Unable to retrieve latest status change from OpenProject %s for finding %s as there is no OpenProject_Project configured for this finding." % (op_issue.openproject_id, find), find)
         return False
 
     meta = None
