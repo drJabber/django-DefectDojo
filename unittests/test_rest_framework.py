@@ -1049,7 +1049,6 @@ class FindingsTest(BaseClass.RESTEndpointTest):
         result_json = result.json()
         # Should return all duplicates for id=3
         ll = set(x["id"] for x in result_json)
-        logger.error(f"-------------------- duplicate findings {ll}")
         assert set(x["id"] for x in result_json) == {2, 4, 5, 6, 8, 9}
 
         # Reset duplicate
@@ -1450,7 +1449,7 @@ class TestsTest(BaseClass.RESTEndpointTest):
         self.permission_create = Permissions.Test_Add
         self.permission_update = Permissions.Test_Edit
         self.permission_delete = Permissions.Test_Delete
-        self.deleted_objects = 20
+        self.deleted_objects = 25
         BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
