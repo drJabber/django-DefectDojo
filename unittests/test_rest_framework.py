@@ -1048,7 +1048,9 @@ class FindingsTest(BaseClass.RESTEndpointTest):
         assert result.status_code == status.HTTP_200_OK, "Could not check duplicate status"
         result_json = result.json()
         # Should return all duplicates for id=3
-        assert set(x["id"] for x in result_json) == {2, 4, 5, 6}
+        ll = set(x["id"] for x in result_json)
+        logger.error(f"-------------------- duplicate findings {ll}")
+        assert set(x["id"] for x in result_json) == {2, 4, 5, 6, 8, 9}
 
         # Reset duplicate
         result = self.client.post(self.url + "2/duplicate/reset/")
