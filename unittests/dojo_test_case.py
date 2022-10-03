@@ -450,7 +450,7 @@ class DojoTestUtilsMixin(object):
         project.save()
 
     # Return a list of jira issue in json format.
-    def get_epic_issues(self, engagement):
+    def get_jira_epic_issues(self, engagement):
         instance = jira_helper.get_jira_instance(engagement)
         jira = jira_helper.get_jira_connection(instance)
         epic_id = jira_helper.get_jira_issue_key(engagement)
@@ -636,7 +636,7 @@ class DojoTestUtilsMixin(object):
         project.save()
 
     # Return a list of openproject issue in json format.
-    def get_epic_issues(self, engagement):
+    def get_openproject_epic_issues(self, engagement):
         instance = openproject_helper.get_openproject_instance(engagement)
         openproject = openproject_helper.get_openproject_connection(instance)
         epic_id = openproject_helper.get_openproject_issue_key(engagement)
