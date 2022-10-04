@@ -118,7 +118,7 @@ class TestDojoDefaultImporter(DojoTestCase):
         test, len_new_findings, len_closed_findings, _ = importer.import_scan(scan, scan_type, engagement, lead=None, environment=environment,
                     active=True, verified=True, tags=None, minimum_severity=None,
                     user=user, endpoints_to_add=None, scan_date=scan_date, version=None, branch_tag=None, build_id=None,
-                    commit_hash=None, push_to_jira=None, close_old_findings=False, group_by=None, api_scan_configuration=None)
+                    commit_hash=None, push_to_jira=None, push_to_openproject=None, close_old_findings=False, group_by=None, api_scan_configuration=None)
 
         self.assertEqual(f"SpotBugs Scan ({scan_type})", test.test_type.name)
         self.assertEqual(56, len_new_findings)
@@ -151,7 +151,7 @@ class TestDojoDefaultImporter(DojoTestCase):
         test, len_new_findings, len_closed_findings, _ = importer.import_scan(scan, scan_type, engagement, lead=None, environment=environment,
                     active=True, verified=True, tags=None, minimum_severity=None,
                     user=user, endpoints_to_add=None, scan_date=scan_date, version=None, branch_tag=None, build_id=None,
-                    commit_hash=None, push_to_jira=None, close_old_findings=False, group_by=None, api_scan_configuration=None)
+                    commit_hash=None, push_to_jira=None, push_to_openproject=None, close_old_findings=False, group_by=None, api_scan_configuration=None)
 
         self.assertEqual("GitLab SAST Report", test.test_type.name)
         self.assertEqual(1, len_new_findings)
@@ -186,7 +186,7 @@ class FlexibleImportTestAPI(DojoAPITestCase):
         self.engagement_last = self.create_engagement(ENGAGEMENT_NAME_DEFAULT, product=self.product)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_import_by_engagement_id(self, mock):
+    def test_import_by_engagement_id_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=0):
             import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, engagement=self.engagement.id, test_title=TEST_TITLE_DEFAULT)
             test_id = import0['test']
@@ -256,6 +256,16 @@ class FlexibleImportTestAPI(DojoAPITestCase):
             self.assertEqual(get_object_or_none(Product_Type, id=import0['product_type_id']).name, PRODUCT_TYPE_NAME_NEW)
 
         mock.assert_not_called()
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_import_by_engagement_id_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=0):
+            import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, engagement=self.engagement.id, test_title=TEST_TITLE_DEFAULT)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, TEST_TITLE_DEFAULT)
+            self.assertEqual(import0['engagement_id'], self.engagement.id)
+            self.assertEqual(import0['product_id'], self.engagement.product.id)
+        mock.assert_called_with(self.engagement)
 
     def test_endpoint_meta_import_by_product_name_exists(self):
         with assertImportModelsCreated(self, tests=0, engagements=0, products=0, endpoints=0):
