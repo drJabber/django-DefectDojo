@@ -1805,7 +1805,7 @@ class ImportReimportTestUI(DojoAPITestCase, ImportReimportMixin):
         test = Test.objects.get(id=response.url.split('/')[-1])
         return {'test': test.id}
 
-    def import_scan_with_params_ui(self, filename, scan_type='ZAP Scan', engagement=1, minimum_severity='Low', active=True, verified=True, push_to_jira=None, endpoint_to_add=None, tags=None, close_old_findings=False, scan_date=None, service=None):
+    def import_scan_with_params_ui(self, filename, scan_type='ZAP Scan', engagement=1, minimum_severity='Low', active=True, verified=True, push_to_jira=None, push_to_openproject=None, endpoint_to_add=None, tags=None, close_old_findings=False, scan_date=None, service=None):
         payload = {
                 "minimum_severity": minimum_severity,
                 "active": active,
@@ -1819,6 +1819,9 @@ class ImportReimportTestUI(DojoAPITestCase, ImportReimportMixin):
 
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
+
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
 
         if endpoint_to_add is not None:
             payload['endpoints'] = [endpoint_to_add]
@@ -1834,7 +1837,7 @@ class ImportReimportTestUI(DojoAPITestCase, ImportReimportMixin):
 
         return self.import_scan_ui(engagement, payload)
 
-    def reimport_scan_with_params_ui(self, test_id, filename, scan_type='ZAP Scan', minimum_severity='Low', active=True, verified=True, push_to_jira=None, tags=None, close_old_findings=True, scan_date=None):
+    def reimport_scan_with_params_ui(self, test_id, filename, scan_type='ZAP Scan', minimum_severity='Low', active=True, verified=True, push_to_jira=None, push_to_openproject=None, tags=None, close_old_findings=True, scan_date=None):
         payload = {
                 "minimum_severity": minimum_severity,
                 "active": active,
@@ -1847,6 +1850,9 @@ class ImportReimportTestUI(DojoAPITestCase, ImportReimportMixin):
 
         if push_to_jira is not None:
             payload['push_to_jira'] = push_to_jira
+
+        if push_to_openproject is not None:
+            payload['push_to_openproject'] = push_to_openproject
 
         if tags is not None:
             payload['tags'] = tags

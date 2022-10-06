@@ -539,7 +539,7 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
             self.assertEqual(import0['engagement_id'], self.engagement.id)
         mock.assert_called_with(self.engagement)
 
-    @patch('dojo.openproject_link.helper.get_openrpoject_project')
+    @patch('dojo.openproject_link.helper.get_openproject_project')
     def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_not_exists_auto_create_with_openproject(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=1):
             import0 = self.reimport_scan_with_params(None, ACUNETIX_AUDIT_ONE_VULN_FILENAME, scan_type='Acunetix Scan', product_name=PRODUCT_NAME_DEFAULT,
