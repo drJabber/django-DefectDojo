@@ -196,7 +196,7 @@ class FlexibleImportTestAPI(DojoAPITestCase):
         mock.assert_called_with(self.engagement)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_import_by_product_name_exists_engagement_name_exists(self, mock):
+    def test_import_by_product_name_exists_engagement_name_exists_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=0):
             import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT)
@@ -212,7 +212,7 @@ class FlexibleImportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_import_by_product_name_exists_engagement_name_not_exists_auto_create(self, mock):
+    def test_import_by_product_name_exists_engagement_name_not_exists_auto_create_with_jira(self, mock):
         mock.return_value = None
         with assertImportModelsCreated(self, tests=1, engagements=1, products=0, product_types=0, endpoints=0):
             import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
@@ -231,7 +231,7 @@ class FlexibleImportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_import_by_product_name_not_exists_engagement_name_auto_create(self, mock):
+    def test_import_by_product_name_not_exists_engagement_name_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=0, endpoints=0):
             import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_DEFAULT, auto_create_context=True)
@@ -244,7 +244,7 @@ class FlexibleImportTestAPI(DojoAPITestCase):
         mock.assert_not_called()
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_import_by_product_type_name_not_exists_product_name_not_exists_engagement_name_auto_create(self, mock):
+    def test_import_by_product_type_name_not_exists_product_name_not_exists_engagement_name_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=1, endpoints=0):
             import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_NEW, auto_create_context=True)
@@ -266,6 +266,58 @@ class FlexibleImportTestAPI(DojoAPITestCase):
             self.assertEqual(import0['engagement_id'], self.engagement.id)
             self.assertEqual(import0['product_id'], self.engagement.product.id)
         mock.assert_called_with(self.engagement)
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_import_by_product_name_exists_engagement_name_exists_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=0):
+            import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT)
+            test_id = import0['test']
+            self.assertEqual(Test.objects.get(id=test_id).engagement, self.engagement_last)
+            self.assertEqual(import0['engagement_id'], self.engagement_last.id)
+            self.assertEqual(import0['product_id'], self.engagement_last.product.id)
+        mock.assert_called_with(self.engagement_last)
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_import_by_product_name_exists_engagement_name_not_exists_auto_create_with_openproject(self, mock):
+        mock.return_value = None
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=0, product_types=0, endpoints=0):
+            import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(import0['product_id'], self.engagement.product.id)
+        # the new engagement should inherit the openproject settings from the product
+        # the openproject settings are retrieved before an engagement is auto created
+        mock.assert_called_with(self.product)
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_import_by_product_name_not_exists_engagement_name_auto_create_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=0, endpoints=0):
+            import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_DEFAULT, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).name, PRODUCT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).prod_type.name, PRODUCT_TYPE_NAME_DEFAULT)
+
+        mock.assert_not_called()
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_import_by_product_type_name_not_exists_product_name_not_exists_engagement_name_auto_create_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=1, endpoints=0):
+            import0 = self.import_scan_with_params(NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_NEW, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).name, PRODUCT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).prod_type.name, PRODUCT_TYPE_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product_Type, id=import0['product_type_id']).name, PRODUCT_TYPE_NAME_NEW)
+
+        mock.assert_not_called()
 
     def test_endpoint_meta_import_by_product_name_exists(self):
         with assertImportModelsCreated(self, tests=0, engagements=0, products=0, endpoints=0):
@@ -393,7 +445,7 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title=TEST_TITLE_DEFAULT, expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_exists_auto_create(self, mock):
+    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_exists_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=1):
             import0 = self.reimport_scan_with_params(None, ACUNETIX_AUDIT_ONE_VULN_FILENAME, scan_type='Acunetix Scan', product_name=PRODUCT_NAME_DEFAULT,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title=TEST_TITLE_DEFAULT, auto_create_context=True)
@@ -408,7 +460,7 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title='bogus title', expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_not_exists_auto_create(self, mock):
+    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_not_exists_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=1):
             import0 = self.reimport_scan_with_params(None, ACUNETIX_AUDIT_ONE_VULN_FILENAME, scan_type='Acunetix Scan', product_name=PRODUCT_NAME_DEFAULT,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title='bogus title', auto_create_context=True)
@@ -433,7 +485,7 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_reimport_by_product_name_exists_engagement_name_not_exists_auto_create(self, mock):
+    def test_reimport_by_product_name_exists_engagement_name_not_exists_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=1, products=0, product_types=0, endpoints=0):
             import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, auto_create_context=True)
@@ -452,7 +504,7 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, expected_http_status_code=400)
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_reimport_by_product_name_not_exists_engagement_name_auto_create(self, mock):
+    def test_reimport_by_product_name_not_exists_engagement_name_auto_create_with_jira(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=0, endpoints=0):
             import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_DEFAULT, auto_create_context=True)
@@ -465,7 +517,70 @@ class FlexibleReimportTestAPI(DojoAPITestCase):
         mock.assert_not_called()
 
     @patch('dojo.jira_link.helper.get_jira_project')
-    def test_reimport_by_product_type_not_exists_product_name_not_exists_engagement_name_auto_create(self, mock):
+    def test_reimport_by_product_type_not_exists_product_name_not_exists_engagement_name_auto_create_with_jira(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=1, endpoints=0):
+            import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_NEW, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).name, PRODUCT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).prod_type.name, PRODUCT_TYPE_NAME_NEW)
+
+        mock.assert_not_called()
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_exists_auto_create_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=1):
+            import0 = self.reimport_scan_with_params(None, ACUNETIX_AUDIT_ONE_VULN_FILENAME, scan_type='Acunetix Scan', product_name=PRODUCT_NAME_DEFAULT,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title=TEST_TITLE_DEFAULT, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, TEST_TITLE_DEFAULT)
+            self.assertEqual(import0['engagement_id'], self.engagement.id)
+        mock.assert_called_with(self.engagement)
+
+    @patch('dojo.openproject_link.helper.get_openrpoject_project')
+    def test_reimport_by_product_name_exists_engagement_name_exists_scan_type_not_exsists_test_title_not_exists_auto_create_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=0, products=0, product_types=0, endpoints=1):
+            import0 = self.reimport_scan_with_params(None, ACUNETIX_AUDIT_ONE_VULN_FILENAME, scan_type='Acunetix Scan', product_name=PRODUCT_NAME_DEFAULT,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_DEFAULT, test_title='bogus title', auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).scan_type, 'Acunetix Scan')
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, 'bogus title')
+            self.assertEqual(import0['engagement_id'], self.engagement.id)
+        # the new test should inherit the openproject settings from the engagement
+        # the openproject settings are retrieved before an test is auto created
+        mock.assert_called_with(self.engagement)
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_reimport_by_product_name_exists_engagement_name_not_exists_auto_create_with__openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=0, product_types=0, endpoints=0):
+            import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_DEFAULT,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(import0['product_id'], self.engagement.product.id)
+            self.assertEqual(import0['product_type_id'], self.engagement.product.prod_type.id)
+        # the new engagement should inherit the openproject settings from the product
+        # the openproject settings are retrieved before an engagement is auto created
+        mock.assert_called_with(self.product)
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_reimport_by_product_name_not_exists_engagement_name_auto_create_with_openproject(self, mock):
+        with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=0, endpoints=0):
+            import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
+                engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_DEFAULT, auto_create_context=True)
+            test_id = import0['test']
+            self.assertEqual(get_object_or_none(Test, id=test_id).title, None)
+            self.assertEqual(get_object_or_none(Engagement, id=import0['engagement_id']).name, ENGAGEMENT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).name, PRODUCT_NAME_NEW)
+            self.assertEqual(get_object_or_none(Product, id=import0['product_id']).prod_type.name, PRODUCT_TYPE_NAME_DEFAULT)
+
+        mock.assert_not_called()
+
+    @patch('dojo.openproject_link.helper.get_openproject_project')
+    def test_reimport_by_product_type_not_exists_product_name_not_exists_engagement_name_auto_create_with_openproject(self, mock):
         with assertImportModelsCreated(self, tests=1, engagements=1, products=1, product_types=1, endpoints=0):
             import0 = self.reimport_scan_with_params(None, NPM_AUDIT_NO_VULN_FILENAME, scan_type=NPM_AUDIT_SCAN_TYPE, product_name=PRODUCT_NAME_NEW,
                 engagement=None, engagement_name=ENGAGEMENT_NAME_NEW, product_type_name=PRODUCT_TYPE_NAME_NEW, auto_create_context=True)
