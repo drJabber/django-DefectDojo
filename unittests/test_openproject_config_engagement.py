@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class OpenProjectConfigEngagementBase(object):
     def get_new_engagement_with_openproject_project_data(self):
         return {
-            'name': 'new engagement',
-            'description': 'new description',
+            'name': 'new engagement OP',
+            'description': 'new description op',
             'lead': 1,
             'product': self.product_id,
             'target_start': '2070-11-27',
@@ -23,14 +23,14 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'IUNSEC',
+            'openproject-project-form-project_key': 'op',
             'openproject-project-form-product_openproject_sla_notification': 'on',
         }
 
     def get_new_engagement_with_openproject_project_data_and_epic_mapping(self):
         return {
-            'name': 'new engagement',
-            'description': 'new description',
+            'name': 'new engagement op',
+            'description': 'new description op',
             'lead': 1,
             'product': self.product_id,
             'target_start': '2070-11-27',
@@ -46,8 +46,8 @@ class OpenProjectConfigEngagementBase(object):
 
     def get_new_engagement_without_openproject_project_data(self):
         return {
-            'name': 'new engagement',
-            'description': 'new description',
+            'name': 'new engagement op',
+            'description': 'new description op',
             'lead': 1,
             'product': self.product_id,
             'target_start': '2070-11-27',
