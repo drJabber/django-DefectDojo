@@ -23,7 +23,7 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'op',
+            'openproject-project-form-project_key': 'IUNSEC',
             'openproject-project-form-product_openproject_sla_notification': 'on',
         }
 

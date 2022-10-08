@@ -161,6 +161,14 @@ def get_openproject_project(obj, use_inheritance=True):
     if isinstance(obj, Engagement):
         engagement = obj
         op_project = None
+        try:
+            openproject_project = engagement.openproject_project  # first() doesn't work with prefetching
+            if openproject_project:
+                logger.debug('found openproject_project %s for %s', openproject_project, engagement)
+                return openproject_project
+        except OpenProject_Project.DoesNotExist:
+            pass  # leave openproject_project as None
+
         if use_inheritance:
             logger.debug('delegating to product %s for %s', engagement.product, engagement)
             return get_openproject_project(engagement.product)
