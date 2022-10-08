@@ -85,7 +85,7 @@ class OpenProjectConfigProductTest(DojoTestCase):
         self.assertTrue('Name or service not known' in content)
 
         # test raw connection error
-        with self.assertRaises(requests.exceptions.RequestException):
+        with self.assertRaises(BusinessError):
             openproject = openproject_helper.get_openproject_connection_raw(data['url'], data['username'], data['password'])
 
     @patch('dojo.openproject_link.views.openproject_helper.get_openproject_connection_raw')
