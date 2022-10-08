@@ -2776,7 +2776,6 @@ class OpenProjectProjectForm(forms.ModelForm):
                 self.fields['openproject_instance'].disabled = False
                 self.fields['project_key'].disabled = False
                 self.fields['issue_template_dir'].disabled = False
-                self.fields['component'].disabled = False
                 self.fields['push_all_issues'].disabled = False
                 self.fields['enable_engagement_epic_mapping'].disabled = False
                 self.fields['push_notes'].disabled = False
