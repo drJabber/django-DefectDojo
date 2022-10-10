@@ -165,6 +165,7 @@ class DojoTestUtilsMixin(object):
             'jira-project-form-enable_engagement_epic_mapping': 'on',
             'jira-project-form-push_notes': 'on',
             'jira-project-form-product_jira_sla_notification': 'on',
+            'jira-project-form-custom_fields': 'null',
             'sla_configuration': 1
 
         }
@@ -192,6 +193,7 @@ class DojoTestUtilsMixin(object):
             'jira-project-form-enable_engagement_epic_mapping': 'on',
             'jira-project-form-push_notes': 'on',
             'jira-project-form-product_jira_sla_notification': 'on',
+            'jira-project-form-custom_fields': 'null',
             'sla_configuration': 1
 
         }
@@ -206,6 +208,7 @@ class DojoTestUtilsMixin(object):
             'jira-project-form-enable_engagement_epic_mapping': 'on',
             'jira-project-form-push_notes': 'on',
             'jira-project-form-product_jira_sla_notification': 'on',
+            'jira-project-form-custom_fields': 'null',
             'sla_configuration': 1
 
         }
@@ -215,8 +218,9 @@ class DojoTestUtilsMixin(object):
             'name': product.name,
             'description': product.description,
             'prod_type': product.prod_type.id,
-            'sla_configuration': 1
+            'sla_configuration': 1,
 
+            'jira-project-form-custom_fields': 'null',
             # 'project_key': 'IFFF',
             # 'jira_instance': 2,
             # 'enable_engagement_epic_mapping': 'on',
