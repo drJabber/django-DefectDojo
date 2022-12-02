@@ -28,7 +28,7 @@ OPEN_STATUS = [
 
 
 def op_add_epic(op_connection, engagement, openproject_project, openproject_instance):
-    logger.debug('add_epic: %s', engagement.name)
+    logger.debug('add_epic: eng %s, op key %s', engagement.name, openproject_project)
     op_project_service = op_connection.get_project_service()
     op_project = op_project_service.find_all([Filter("id", "=", [openproject_project.project_key])])[0]
     wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
@@ -79,7 +79,7 @@ def op_issue_priority_key(op_connection, priority):
         raise BusinessError(f"Bad Openproject priority key: {priority}")
 
 
-def op_add_issue(op_connection, obj, **kwargs):
+def     op_add_issue(op_connection, obj, **kwargs):
     project_id = kwargs['project_id']
     subject = kwargs['subject'] 
     description = kwargs['description'] 
@@ -88,7 +88,9 @@ def op_add_issue(op_connection, obj, **kwargs):
     issue_priority = kwargs['issue_priority']
 
     op_project_service = op_connection.get_project_service()
+    logger.debug(f'------------------- op_add_issue project_id={project_id}')
     op_project = op_project_service.find_all([Filter("id", "=", [project_id])])[0]
+    logger.debug(f'------------------- op_project={op_project}')
     wp_form = op_project_service.create_work_package_form(op_project, WorkPackage({}))
 
     wp = WorkPackage(wp_form._embedded["payload"]) 
@@ -203,6 +205,7 @@ def op_update_issue(op_connection, op_issue, obj, **kwargs):
         }
     )
     op_push_status(obj, wp, new_wp, op_open_status_key, op_close_status_key)
+    logger.debug(f'---------------------- update issue: {new_wp}')
     return wp_service.update(new_wp)
 
 

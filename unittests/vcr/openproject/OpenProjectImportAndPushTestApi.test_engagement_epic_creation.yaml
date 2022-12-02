@@ -1,0 +1,370 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Authorization:
+      - Basic YXBpa2V5OmM3Y2VlMmZkN2EwNzBmYzZhOGI2NzZkZTE5NWE1MDc5ZGJkNDViODc0N2VjOTk2ZWJkMThkYzhhOTQ1M2UzMWE=
+      Connection:
+      - close
+      Content-Type:
+      - application/hal+json
+      Host:
+      - 10.3.2.1:4242
+      User-Agent:
+      - Python-urllib/3.8
+    method: GET
+    uri: http://10.3.2.1:4242/api/v3/my_preferences/
+  response:
+    body:
+      string: This resource has been moved permanently to /api/v3/users/me/preferences.
+    headers:
+      Cache-Control:
+      - no-cache
+      Connection:
+      - close
+      Content-Security-Policy:
+      - 'default-src ''self''; base-uri ''self''; connect-src ''self'' https://augur.openproject.com;
+        font-src ''self'' data:; form-action ''self''; frame-ancestors ''self''; frame-src
+        ''self'' https://player.vimeo.com https://releases.openproject.com/v1/check.svg;
+        img-src * data: blob:; object-src https://releases.openproject.com/v1/check.svg;
+        script-src ''self''; style-src ''self'' ''unsafe-inline'''
+      Content-Type:
+      - text/plain
+      Date:
+      - Wed, 09 Nov 2022 19:08:11 GMT
+      Link:
+      - </api/v3/openapi.json>; rel="service-desc"
+      Location:
+      - /api/v3/users/me/preferences
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache/2.4.38 (Debian)
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding,Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-Request-Id:
+      - a4773502-e5a9-4c0d-8f2b-a147a1b49aea
+      X-Runtime:
+      - '0.010618'
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 301
+      message: Moved Permanently
+- request:
+    body: null
+    headers:
+      Authorization:
+      - Basic YXBpa2V5OmM3Y2VlMmZkN2EwNzBmYzZhOGI2NzZkZTE5NWE1MDc5ZGJkNDViODc0N2VjOTk2ZWJkMThkYzhhOTQ1M2UzMWE=
+      Connection:
+      - close
+      Host:
+      - 10.3.2.1:4242
+      User-Agent:
+      - Python-urllib/3.8
+    method: GET
+    uri: http://10.3.2.1:4242/api/v3/users/me/preferences
+  response:
+    body:
+      string: '{"_type":"UserPreferences","hideMail":true,"timeZone":null,"warnOnLeavingUnsaved":true,"commentSortDescending":false,"autoHidePopups":true,"dailyReminders":{"enabled":true,"times":["08:00"]},"immediateReminders":{"mentioned":false},"pauseReminders":{"enabled":false},"workdays":[1,2,3,4,5],"notifications":[{"watched":true,"involved":true,"mentioned":true,"workPackageCreated":false,"workPackageCommented":false,"workPackageProcessed":false,"workPackagePrioritized":false,"workPackageScheduled":false,"newsAdded":false,"newsCommented":false,"documentAdded":false,"forumMessages":false,"wikiPageAdded":false,"wikiPageUpdated":false,"membershipAdded":false,"membershipUpdated":false,"_links":{"project":{"href":null}}}],"_links":{"self":{"href":"/api/v3/users/3/preferences"},"user":{"href":"/api/v3/users/3","title":"OpenProject
+        Admin"},"updateImmediately":{"href":"/api/v3/users/3/preferences","method":"patch"}}}'
+    headers:
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      Connection:
+      - close
+      Content-Security-Policy:
+      - 'default-src ''self''; base-uri ''self''; connect-src ''self'' https://augur.openproject.com;
+        font-src ''self'' data:; form-action ''self''; frame-ancestors ''self''; frame-src
+        ''self'' https://player.vimeo.com https://releases.openproject.com/v1/check.svg;
+        img-src * data: blob:; object-src https://releases.openproject.com/v1/check.svg;
+        script-src ''self''; style-src ''self'' ''unsafe-inline'''
+      Content-Type:
+      - application/hal+json; charset=utf-8
+      Date:
+      - Wed, 09 Nov 2022 19:08:11 GMT
+      ETag:
+      - W/"a923db51ae3f7f6cc0e5df352245b735"
+      Link:
+      - </api/v3/openapi.json>; rel="service-desc"
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache/2.4.38 (Debian)
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding,Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-Request-Id:
+      - f8a2570d-7fcf-4b64-9ed6-e792ad622fa5
+      X-Runtime:
+      - '0.017220'
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Authorization:
+      - Basic YXBpa2V5OmM3Y2VlMmZkN2EwNzBmYzZhOGI2NzZkZTE5NWE1MDc5ZGJkNDViODc0N2VjOTk2ZWJkMThkYzhhOTQ1M2UzMWE=
+      Connection:
+      - close
+      Content-Type:
+      - application/json
+      Host:
+      - 10.3.2.1:4242
+      User-Agent:
+      - Python-urllib/3.8
+    method: GET
+    uri: http://10.3.2.1:4242/api/v3/projects?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%222222%22%5D%7D%7D%5D
+  response:
+    body:
+      string: '{"_type":"Collection","total":1,"count":1,"pageSize":20,"offset":1,"_embedded":{"elements":[{"_type":"Project","id":2222,"identifier":"qqq0002z","name":"qqq0002z","active":true,"public":false,"description":{"format":"markdown","raw":"","html":""},"createdAt":"2022-11-11T22:13:00Z","updatedAt":"2022-11-11T22:13:00Z","statusExplanation":{"format":"markdown","raw":"","html":""},"_links":{"self":{"href":"/api/v3/projects/2222","title":"qqq0002z"},"createWorkPackage":{"href":"/api/v3/projects/2222/work_packages/form","method":"post"},"createWorkPackageImmediately":{"href":"/api/v3/projects/2222/work_packages","method":"post"},"workPackages":{"href":"/api/v3/projects/2222/work_packages"},"categories":{"href":"/api/v3/projects/2222/categories"},"versions":{"href":"/api/v3/projects/2222/versions"},"memberships":{"href":"/api/v3/memberships?filters=%5B%7B%22project%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D"},"types":{"href":"/api/v3/projects/2222/types"},"update":{"href":"/api/v3/projects/2222/form","method":"post"},"updateImmediately":{"href":"/api/v3/projects/2222","method":"patch"},"schema":{"href":"/api/v3/projects/schema"},"status":{"href":null},"ancestors":[],"parent":{"href":null}}}]},"_links":{"self":{"href":"/api/v3/projects?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D&offset=1&pageSize=20"},"jumpTo":{"href":"/api/v3/projects?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D&offset=%7Boffset%7D&pageSize=20","templated":true},"changeSize":{"href":"/api/v3/projects?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D&offset=1&pageSize=%7Bsize%7D","templated":true},"representations":[{"href":"/projects.csv?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D&offset=1&pageSize=20","identifier":"csv","type":"text/csv","title":"CSV"},{"href":"/projects.xls?filters=%5B%7B%22id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D&offset=1&pageSize=20","identifier":"xls","type":"application/vnd.ms-excel","title":"XLS"}]}}'
+    headers:
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      Connection:
+      - close
+      Content-Security-Policy:
+      - 'default-src ''self''; base-uri ''self''; connect-src ''self'' https://augur.openproject.com;
+        font-src ''self'' data:; form-action ''self''; frame-ancestors ''self''; frame-src
+        ''self'' https://player.vimeo.com https://releases.openproject.com/v1/check.svg;
+        img-src * data: blob:; object-src https://releases.openproject.com/v1/check.svg;
+        script-src ''self''; style-src ''self'' ''unsafe-inline'''
+      Content-Type:
+      - application/hal+json; charset=utf-8
+      Date:
+      - Sun, 13 Nov 2022 16:24:07 GMT
+      ETag:
+      - W/"28b593745fdaa50d542bfc88ef358b41"
+      Link:
+      - </api/v3/openapi.json>; rel="service-desc"
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache/2.4.38 (Debian)
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding,Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-Request-Id:
+      - 55fcb29b-e54c-45e7-939d-b9a46c58706d
+      X-Runtime:
+      - '0.047566'
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Authorization:
+      - Basic YXBpa2V5OmM3Y2VlMmZkN2EwNzBmYzZhOGI2NzZkZTE5NWE1MDc5ZGJkNDViODc0N2VjOTk2ZWJkMThkYzhhOTQ1M2UzMWE=
+      Connection:
+      - close
+      Content-Type:
+      - application/json
+      Host:
+      - 10.3.2.1:4242
+      User-Agent:
+      - Python-urllib/3.8
+    method: POST
+    uri: http://10.3.2.1:4242/api/v3/projects/2222/work_packages/form
+  response:
+    body:
+      string: '{"_type":"Form","_embedded":{"payload":{"subject":"","description":{"format":"markdown","raw":"","html":""},"scheduleManually":false,"startDate":null,"dueDate":null,"estimatedTime":null,"duration":null,"ignoreNonWorkingDays":false,"percentageDone":0,"remainingTime":null,"_links":{"category":{"href":null},"type":{"href":"/api/v3/types/1","title":"Task"},"priority":{"href":"/api/v3/priorities/8","title":"Normal"},"project":{"href":"/api/v3/projects/2222","title":"qqq0002z"},"status":{"href":"/api/v3/statuses/1","title":"New"},"responsible":{"href":null},"assignee":{"href":null},"version":{"href":null},"parent":{"href":null,"title":null}}},"schema":{"_type":"Schema","_dependencies":[],"_attributeGroups":[{"_type":"WorkPackageFormAttributeGroup","name":"People","attributes":["assignee","responsible"]},{"_type":"WorkPackageFormAttributeGroup","name":"Estimates
+        and time","attributes":["estimatedTime","spentTime","remainingTime"]},{"_type":"WorkPackageFormAttributeGroup","name":"Details","attributes":["date","percentageDone","category","version","priority"]},{"_type":"WorkPackageFormAttributeGroup","name":"Costs","attributes":["overallCosts","laborCosts","materialCosts","costsByType"]}],"lockVersion":{"type":"Integer","name":"Lock
+        Version","required":true,"hasDefault":false,"writable":false,"options":{}},"id":{"type":"Integer","name":"ID","required":true,"hasDefault":false,"writable":false,"options":{}},"subject":{"type":"String","name":"Subject","required":true,"hasDefault":false,"writable":true,"minLength":1,"maxLength":255,"options":{}},"description":{"type":"Formattable","name":"Description","required":false,"hasDefault":false,"writable":true,"options":{}},"duration":{"type":"Duration","name":"Duration","required":false,"hasDefault":false,"writable":true,"options":{}},"scheduleManually":{"type":"Boolean","name":"Manual
+        scheduling","required":false,"hasDefault":true,"writable":true,"options":{}},"ignoreNonWorkingDays":{"type":"Boolean","name":"Ignore
+        non working days","required":false,"hasDefault":false,"writable":true,"options":{}},"startDate":{"type":"Date","name":"Start
+        date","required":false,"hasDefault":false,"writable":true,"options":{}},"dueDate":{"type":"Date","name":"Finish
+        date","required":false,"hasDefault":false,"writable":true,"options":{}},"derivedStartDate":{"type":"Date","name":"Derived
+        start date","required":false,"hasDefault":false,"writable":false,"options":{}},"derivedDueDate":{"type":"Date","name":"Derived
+        finish date","required":false,"hasDefault":false,"writable":false,"options":{}},"estimatedTime":{"type":"Duration","name":"Estimated
+        time","required":false,"hasDefault":false,"writable":true,"attributeGroup":"Estimates
+        and time","options":{}},"derivedEstimatedTime":{"type":"Duration","name":"Derived
+        estimated time","required":false,"hasDefault":false,"writable":false,"options":{}},"spentTime":{"type":"Duration","name":"Spent
+        time","required":false,"hasDefault":false,"writable":false,"attributeGroup":"Estimates
+        and time","options":{}},"percentageDone":{"type":"Integer","name":"Progress
+        (%)","required":false,"hasDefault":false,"writable":true,"attributeGroup":"Details","options":{}},"createdAt":{"type":"DateTime","name":"Created
+        on","required":true,"hasDefault":false,"writable":false,"options":{}},"updatedAt":{"type":"DateTime","name":"Updated
+        on","required":true,"hasDefault":false,"writable":false,"options":{}},"author":{"type":"User","name":"Author","required":true,"hasDefault":false,"writable":false,"options":{},"location":"_links"},"project":{"type":"Project","name":"Project","required":true,"hasDefault":false,"writable":true,"location":"_links","_links":{"allowedValues":{"href":"/api/v3/work_packages/available_projects"}}},"parent":{"type":"WorkPackage","name":"Parent","required":false,"hasDefault":false,"writable":true,"location":"_links","_links":{}},"assignee":{"type":"User","name":"Assignee","required":false,"hasDefault":false,"writable":true,"attributeGroup":"People","location":"_links","_links":{"allowedValues":{"href":"/api/v3/projects/2222/available_assignees"}}},"responsible":{"type":"User","name":"Accountable","required":false,"hasDefault":false,"writable":true,"attributeGroup":"People","location":"_links","_links":{"allowedValues":{"href":"/api/v3/projects/2222/available_responsibles"}}},"type":{"type":"Type","name":"Type","required":true,"hasDefault":false,"writable":true,"location":"_links","_embedded":{"allowedValues":[{"_type":"Type","id":1,"name":"Task","color":"#1A67A3","position":1,"isDefault":true,"isMilestone":false,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T18:25:46Z","_links":{"self":{"href":"/api/v3/types/1","title":"Task"}}},{"_type":"Type","id":2,"name":"Milestone","color":"#35C53F","position":2,"isDefault":true,"isMilestone":true,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T18:25:46Z","_links":{"self":{"href":"/api/v3/types/2","title":"Milestone"}}},{"_type":"Type","id":3,"name":"Phase","color":"#FF922B","position":3,"isDefault":true,"isMilestone":false,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T18:25:46Z","_links":{"self":{"href":"/api/v3/types/3","title":"Phase"}}},{"_type":"Type","id":5,"name":"Epic","color":"#845EF7","position":5,"isDefault":true,"isMilestone":false,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T20:27:33Z","_links":{"self":{"href":"/api/v3/types/5","title":"Epic"}}},{"_type":"Type","id":7,"name":"Bug","color":"#F03E3E","position":7,"isDefault":true,"isMilestone":false,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T20:27:45Z","_links":{"self":{"href":"/api/v3/types/7","title":"Bug"}}}]},"_links":{"allowedValues":[{"href":"/api/v3/types/1","title":"Task"},{"href":"/api/v3/types/2","title":"Milestone"},{"href":"/api/v3/types/3","title":"Phase"},{"href":"/api/v3/types/5","title":"Epic"},{"href":"/api/v3/types/7","title":"Bug"}]}},"status":{"type":"Status","name":"Status","required":true,"hasDefault":true,"writable":true,"location":"_links","_embedded":{"allowedValues":[{"_type":"Status","id":1,"name":"New","isClosed":false,"color":"#1098AD","isDefault":true,"isReadonly":false,"defaultDoneRatio":null,"position":1,"_links":{"self":{"href":"/api/v3/statuses/1","title":"New"}}},{"_type":"Status","id":7,"name":"In
+        progress","isClosed":false,"color":"#CC5DE8","isDefault":false,"isReadonly":false,"defaultDoneRatio":null,"position":7,"_links":{"self":{"href":"/api/v3/statuses/7","title":"In
+        progress"}}},{"_type":"Status","id":12,"name":"Closed","isClosed":true,"color":"#DEE2E6","isDefault":false,"isReadonly":false,"defaultDoneRatio":null,"position":13,"_links":{"self":{"href":"/api/v3/statuses/12","title":"Closed"}}},{"_type":"Status","id":13,"name":"On
+        hold","isClosed":false,"color":"#FFC078","isDefault":false,"isReadonly":false,"defaultDoneRatio":null,"position":14,"_links":{"self":{"href":"/api/v3/statuses/13","title":"On
+        hold"}}},{"_type":"Status","id":14,"name":"Rejected","isClosed":true,"color":"#FFA8A8","isDefault":false,"isReadonly":false,"defaultDoneRatio":null,"position":15,"_links":{"self":{"href":"/api/v3/statuses/14","title":"Rejected"}}}]},"_links":{"allowedValues":[{"href":"/api/v3/statuses/1","title":"New"},{"href":"/api/v3/statuses/7","title":"In
+        progress"},{"href":"/api/v3/statuses/12","title":"Closed"},{"href":"/api/v3/statuses/13","title":"On
+        hold"},{"href":"/api/v3/statuses/14","title":"Rejected"}]}},"category":{"type":"Category","name":"Category","required":false,"hasDefault":false,"writable":true,"attributeGroup":"Details","location":"_links","_embedded":{"allowedValues":[]},"_links":{"allowedValues":[]}},"version":{"type":"Version","name":"Version","required":false,"hasDefault":false,"writable":true,"attributeGroup":"Details","location":"_links","_embedded":{"allowedValues":[]},"_links":{"allowedValues":[]}},"priority":{"type":"Priority","name":"Priority","required":true,"hasDefault":true,"writable":true,"attributeGroup":"Details","location":"_links","_embedded":{"allowedValues":[{"_type":"Priority","id":7,"name":"Low","position":1,"color":"#C5F6FA","isDefault":false,"isActive":true,"_links":{"self":{"href":"/api/v3/priorities/7","title":"Low"}}},{"_type":"Priority","id":8,"name":"Normal","position":2,"color":"#74C0FC","isDefault":true,"isActive":true,"_links":{"self":{"href":"/api/v3/priorities/8","title":"Normal"}}},{"_type":"Priority","id":9,"name":"High","position":3,"color":"#F59F00","isDefault":false,"isActive":true,"_links":{"self":{"href":"/api/v3/priorities/9","title":"High"}}},{"_type":"Priority","id":10,"name":"Immediate","position":4,"color":"#CC5DE8","isDefault":false,"isActive":true,"_links":{"self":{"href":"/api/v3/priorities/10","title":"Immediate"}}}]},"_links":{"allowedValues":[{"href":"/api/v3/priorities/7","title":"Low"},{"href":"/api/v3/priorities/8","title":"Normal"},{"href":"/api/v3/priorities/9","title":"High"},{"href":"/api/v3/priorities/10","title":"Immediate"}]}},"overallCosts":{"type":"String","name":"Overall
+        costs","required":false,"hasDefault":false,"writable":false,"attributeGroup":"Costs","options":{}},"laborCosts":{"type":"String","name":"Labor
+        costs","required":false,"hasDefault":false,"writable":false,"attributeGroup":"Costs","options":{}},"materialCosts":{"type":"String","name":"Unit
+        costs","required":false,"hasDefault":false,"writable":false,"attributeGroup":"Costs","options":{}},"costsByType":{"type":"Collection","name":"Spent
+        units","required":false,"hasDefault":false,"writable":false,"attributeGroup":"Costs","options":{}},"remainingTime":{"type":"Duration","name":"Remaining
+        hours","required":false,"hasDefault":false,"writable":true,"attributeGroup":"Estimates
+        and time","options":{}},"_links":{"baseSchema":{"href":"/api/v3/work_packages/schemas/4-1"}}},"validationErrors":{"subject":{"_type":"Error","errorIdentifier":"urn:openproject-org:api:v3:errors:PropertyConstraintViolation","message":"Subject
+        can''t be blank.","_embedded":{"details":{"attribute":"subject"}}}}},"_links":{"self":{"href":"/api/v3/work_packages/form","method":"post"},"validate":{"href":"/api/v3/work_packages/form","method":"post"},"previewMarkup":{"href":"/api/v3/render/markdown?context=/api/v3/projects/2222","method":"post"},"customFields":{"href":"/projects/qqq0002z/settings/custom_fields","type":"text/html","title":"Custom
+        fields"}}}'
+    headers:
+      Cache-Control:
+      - no-cache
+      Connection:
+      - close
+      Content-Security-Policy:
+      - 'default-src ''self''; base-uri ''self''; connect-src ''self'' https://augur.openproject.com;
+        font-src ''self'' data:; form-action ''self''; frame-ancestors ''self''; frame-src
+        ''self'' https://player.vimeo.com https://releases.openproject.com/v1/check.svg;
+        img-src * data: blob:; object-src https://releases.openproject.com/v1/check.svg;
+        script-src ''self''; style-src ''self'' ''unsafe-inline'''
+      Content-Type:
+      - application/hal+json; charset=utf-8
+      Date:
+      - Sat, 12 Nov 2022 11:08:08 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache/2.4.38 (Debian)
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding,Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-Request-Id:
+      - 5a7c7fb3-674e-4239-83ea-3bd33acc5132
+      X-Runtime:
+      - '0.017636'
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"subject": "Epical openproject epic", "description": {"format": "markdown",
+      "raw": "Descriptio: some stupid description", "html": ""}, "scheduleManually":
+      false, "startDate": null, "dueDate": null, "estimatedTime": null, "duration":
+      null, "ignoreNonWorkingDays": false, "percentageDone": 0, "remainingTime": null,
+      "_links": {"category": {"href": null}, "type": {"href": "/api/v3/types/5", "title":
+      "Epic"}, "priority": {"href": "/api/v3/priorities/8", "title": "Normal"}, "project":
+      {"href": "/api/v3/projects/2222", "title": "qqq0002z"}, "status": {"href": "/api/v3/statuses/1",
+      "title": "New"}, "responsible": {"href": null}, "assignee": {"href": null},
+      "version": {"href": null}, "parent": {"href": null, "title": null}, "attachments":
+      []}}'
+    headers:
+      Authorization:
+      - Basic YXBpa2V5OmM3Y2VlMmZkN2EwNzBmYzZhOGI2NzZkZTE5NWE1MDc5ZGJkNDViODc0N2VjOTk2ZWJkMThkYzhhOTQ1M2UzMWE=
+      Connection:
+      - close
+      Content-Length:
+      - '733'
+      Content-Type:
+      - application/json
+      Host:
+      - 10.3.2.1:4242
+      User-Agent:
+      - Python-urllib/3.8
+    method: POST
+    uri: http://10.3.2.1:4242/api/v3/projects/2222/work_packages
+  response:
+    body:
+      string: '{"derivedStartDate":null,"derivedDueDate":null,"spentTime":"PT0S","laborCosts":"0.00
+        EUR","materialCosts":"0.00 EUR","overallCosts":"0.00 EUR","_embedded":{"attachments":{"_type":"Collection","total":0,"count":0,"_embedded":{"elements":[]},"_links":{"self":{"href":"/api/v3/work_packages/111890/attachments"}}},"relations":{"_type":"Collection","total":0,"count":0,"_embedded":{"elements":[]},"_links":{"self":{"href":"/api/v3/work_packages/111890/relations"}}},"type":{"_type":"Type","id":7,"name":"Bug","color":"#F03E3E","position":7,"isDefault":true,"isMilestone":false,"createdAt":"2022-11-11T18:25:46Z","updatedAt":"2022-11-11T20:27:45Z","_links":{"self":{"href":"/api/v3/types/7","title":"Bug"}}},"priority":{"_type":"Priority","id":8,"name":"Normal","position":2,"color":"#74C0FC","isDefault":true,"isActive":true,"_links":{"self":{"href":"/api/v3/priorities/8","title":"Normal"}}},"project":{"_type":"Project","id":4,"identifier":"qqq0002z","name":"qqq0002z","active":true,"public":false,"description":{"format":"markdown","raw":"","html":""},"createdAt":"2022-11-11T22:13:00Z","updatedAt":"2022-11-11T22:13:00Z","statusExplanation":{"format":"markdown","raw":"","html":""},"_links":{"self":{"href":"/api/v3/projects/2222","title":"qqq0002z"},"createWorkPackage":{"href":"/api/v3/projects/2222/work_packages/form","method":"post"},"createWorkPackageImmediately":{"href":"/api/v3/projects/2222/work_packages","method":"post"},"workPackages":{"href":"/api/v3/projects/2222/work_packages"},"categories":{"href":"/api/v3/projects/2222/categories"},"versions":{"href":"/api/v3/projects/2222/versions"},"memberships":{"href":"/api/v3/memberships?filters=%5B%7B%22project%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%224%22%5D%7D%7D%5D"},"types":{"href":"/api/v3/projects/2222/types"},"update":{"href":"/api/v3/projects/2222/form","method":"post"},"updateImmediately":{"href":"/api/v3/projects/2222","method":"patch"},"schema":{"href":"/api/v3/projects/schema"},"status":{"href":null},"ancestors":[],"parent":{"href":null}}},"status":{"_type":"Status","id":1,"name":"New","isClosed":false,"color":"#1098AD","isDefault":true,"isReadonly":false,"defaultDoneRatio":null,"position":1,"_links":{"self":{"href":"/api/v3/statuses/1","title":"New"}}},"author":{"_type":"User","id":5,"name":"user
+        user","createdAt":"2022-11-11T20:18:01Z","updatedAt":"2022-11-11T20:30:14Z","login":"user1","firstName":"user","lastName":"user","email":"user1@a.b","avatar":"http://gravatar.com/avatar/b65f706700c961eb5cd960ed7a40ca3e?default=404&secure=false","status":"active","identityUrl":null,"language":"en","_links":{"self":{"href":"/api/v3/users/5","title":"user
+        user"},"memberships":{"href":"/api/v3/memberships?filters=%5B%7B%22principal%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%225%22%5D%7D%7D%5D","title":"Members"},"showUser":{"href":"/users/5","type":"text/html"}}},"customActions":[],"costsByType":{"_type":"Collection","total":0,"count":0,"_embedded":{"elements":[]},"_links":{"self":{"href":"/api/v3/work_packages/111890/summarized_costs_by_type"}}}},"_type":"WorkPackage","id":111890,"lockVersion":0,"subject":"SSSSSSSSSSubject02","description":{"format":"markdown","raw":"Descriptio:
+        some stupid description","html":"<p class=\"op-uc-p\">Descriptio: some stupid
+        description</p>"},"scheduleManually":false,"startDate":null,"dueDate":null,"estimatedTime":null,"derivedEstimatedTime":null,"duration":null,"ignoreNonWorkingDays":false,"percentageDone":0,"createdAt":"2022-11-13T11:10:56Z","updatedAt":"2022-11-13T11:10:56Z","position":1,"storyPoints":null,"remainingTime":null,"_links":{"attachments":{"href":"/api/v3/work_packages/111890/attachments"},"addAttachment":{"href":"/api/v3/work_packages/111890/attachments","method":"post"},"self":{"href":"/api/v3/work_packages/111890","title":"SSSSSSSSSSubject02"},"update":{"href":"/api/v3/work_packages/111890/form","method":"post"},"schema":{"href":"/api/v3/work_packages/schemas/2222-7"},"updateImmediately":{"href":"/api/v3/work_packages/111890","method":"patch"},"delete":{"href":"/api/v3/work_packages/111890","method":"delete"},"logTime":{"href":"/api/v3/time_entries","title":"Log
+        time on SSSSSSSSSSubject02"},"move":{"href":"/work_packages/111890/move/new","type":"text/html","title":"Move
+        SSSSSSSSSSubject02"},"copy":{"href":"/work_packages/111890/copy","title":"Copy
+        SSSSSSSSSSubject02"},"pdf":{"href":"/work_packages/111890.pdf","type":"application/pdf","title":"Export
+        as PDF"},"atom":{"href":"/work_packages/111890.atom","type":"application/rss+xml","title":"Atom
+        feed"},"availableRelationCandidates":{"href":"/api/v3/work_packages/111890/available_relation_candidates","title":"Potential
+        work packages to relate to"},"customFields":{"href":"/projects/qqq0002z/settings/custom_fields","type":"text/html","title":"Custom
+        fields"},"activities":{"href":"/api/v3/work_packages/111890/activities"},"availableWatchers":{"href":"/api/v3/work_packages/111890/available_watchers"},"relations":{"href":"/api/v3/work_packages/111890/relations"},"revisions":{"href":"/api/v3/work_packages/111890/revisions"},"watchers":{"href":"/api/v3/work_packages/111890/watchers"},"addWatcher":{"href":"/api/v3/work_packages/111890/watchers","method":"post","payload":{"user":{"href":"/api/v3/users/{user_id}"}},"templated":true},"removeWatcher":{"href":"/api/v3/work_packages/111890/watchers/{user_id}","method":"delete","templated":true},"addRelation":{"href":"/api/v3/work_packages/111890/relations","method":"post","title":"Add
+        relation"},"addChild":{"href":"/api/v3/projects/qqq0002z/work_packages","method":"post","title":"Add
+        child of SSSSSSSSSSubject02"},"changeParent":{"href":"/api/v3/work_packages/111890","method":"patch","title":"Change
+        parent of SSSSSSSSSSubject02"},"addComment":{"href":"/api/v3/work_packages/111890/activities","method":"post","title":"Add
+        comment"},"previewMarkup":{"href":"/api/v3/render/markdown?context=/api/v3/work_packages/111890","method":"post"},"timeEntries":{"href":"/api/v3/time_entries?filters=%5B%7B%22work_package_id%22%3A%7B%22operator%22%3A%22%3D%22%2C%22values%22%3A%5B%2248%22%5D%7D%7D%5D","title":"Time
+        entries"},"category":{"href":null},"type":{"href":"/api/v3/types/5","title":"Epic"},"priority":{"href":"/api/v3/priorities/8","title":"Normal"},"project":{"href":"/api/v3/projects/2222","title":"qqq0002z"},"status":{"href":"/api/v3/statuses/1","title":"New"},"author":{"href":"/api/v3/users/5","title":"user
+        user"},"responsible":{"href":null},"assignee":{"href":null},"version":{"href":null},"logCosts":{"href":"/work_packages/111890/cost_entries/new","type":"text/html","title":"Log
+        costs on SSSSSSSSSSubject02"},"showCosts":{"href":"/projects/2222/cost_reports?fields%5B%5D=WorkPackageId&operators%5BWorkPackageId%5D=%3D&set_filter=1&values%5BWorkPackageId%5D=48","type":"text/html","title":"Show
+        cost entries"},"costsByType":{"href":"/api/v3/work_packages/111890/summarized_costs_by_type"},"github_pull_requests":{"href":"/api/v3/work_packages/111890/github_pull_requests","title":"GitHub
+        pull requests"},"unwatch":{"href":"/api/v3/work_packages/111890/watchers/5","method":"delete"},"ancestors":[],"parent":{"href":null,"title":null},"customActions":[]}}'
+    headers:
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      Connection:
+      - close
+      Content-Security-Policy:
+      - 'default-src ''self''; base-uri ''self''; connect-src ''self'' https://augur.openproject.com;
+        font-src ''self'' data:; form-action ''self''; frame-ancestors ''self''; frame-src
+        ''self'' https://player.vimeo.com https://releases.openproject.com/v1/check.svg;
+        img-src * data: blob:; object-src https://releases.openproject.com/v1/check.svg;
+        script-src ''self''; style-src ''self'' ''unsafe-inline'''
+      Content-Type:
+      - application/hal+json; charset=utf-8
+      Date:
+      - Sun, 13 Nov 2022 11:10:56 GMT
+      ETag:
+      - W/"3aeddeac0ca0daa2a626a0a0bf6d43eb"
+      Link:
+      - </api/v3/openapi.json>; rel="service-desc"
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache/2.4.38 (Debian)
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding,Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-Request-Id:
+      - 7b4819bc-a4ae-4cdd-9c8d-e481109adac7
+      X-Runtime:
+      - '0.344939'
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 201
+      message: Created
+
+version: 1

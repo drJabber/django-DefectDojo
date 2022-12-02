@@ -39,9 +39,9 @@ class OpenProjectImportAndPushTestApi(DojoVCRAPITestCase):
         # TODO remove __init__ if it does nothing...
         DojoVCRAPITestCase.__init__(self, *args, **kwargs)
 
-    def assert_cassette_played(self):
+    def assert_cassette_played(self, text=''):
         if True:  # set to True when committing. set to False when recording new test cassettes
-            self.assertTrue(self.cassette.all_played)
+            self.assertTrue(self.cassette.all_played, msg=text)
 
     def _get_vcr(self, **kwargs):
         my_vcr = super(OpenProjectImportAndPushTestApi, self)._get_vcr(**kwargs)
@@ -349,6 +349,7 @@ class OpenProjectImportAndPushTestApi(DojoVCRAPITestCase):
         self.patch_finding_api(new_finding_json['id'], {"push_to_openproject": False})
         self.assert_openproject_issue_count_in_test(test_id, 1)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
+        
         self.patch_finding_api(new_finding_json['id'], {"push_to_openproject": True})
         self.assert_openproject_issue_count_in_test(test_id, 2)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
@@ -359,23 +360,31 @@ class OpenProjectImportAndPushTestApi(DojoVCRAPITestCase):
                                                         "active": False})
         self.assert_openproject_issue_count_in_test(test_id, 2)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
+
         post_openproject_status = self.get_openproject_issue_status(new_finding_json['id'])
-        self.assertNotEqual(pre_openproject_status, post_openproject_status)
+        self.assertNotEqual(pre_openproject_status, post_openproject_status, msg=f'compare issue status: {pre_openproject_status}, {post_openproject_status}')
 
         finding_details['title'] = 'openproject api test 4'
         new_finding_json = self.post_new_finding_api(finding_details)
         new_finding_id = new_finding_json['id']
+        
         del new_finding_json['id']
 
         self.assert_openproject_issue_count_in_test(test_id, 2)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
+
         self.put_finding_api(new_finding_id, new_finding_json, push_to_openproject=False)
+
         self.assert_openproject_issue_count_in_test(test_id, 2)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
+
         self.put_finding_api(new_finding_id, new_finding_json, push_to_openproject=True)
+
         self.assert_openproject_issue_count_in_test(test_id, 3)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
+
         self.put_finding_api(new_finding_id, new_finding_json, push_to_openproject=True)
+        
         self.assert_openproject_issue_count_in_test(test_id, 3)
         self.assert_openproject_group_issue_count_in_test(test_id, 0)
 
@@ -577,7 +586,13 @@ class OpenProjectImportAndPushTestApi(DojoVCRAPITestCase):
         self.create_engagement_epic(eng)
         self.assertTrue(eng.has_openproject_issue)
 
-        self.assert_cassette_played()
+        text = ''
+        if not self.cassette.all_played:
+            requests = self.cassette.requests
+            text = f'\nallow_repeats={self.cassette.allow_playback_repeats},\nplay_count={self.cassette.play_count}, PLay_counts = {len(self.cassette.play_counts.values())}, cassette_counts = {len(self.cassette)} \n\n'
+            text = text + '\n'.join(list(map(lambda x: f'[{x[0]} - {self.cassette.play_counts[x[0]]}];  ({x[1].method}) - {x[1].uri}', enumerate(requests))))
+
+        self.assert_cassette_played(text)
 
     def test_engagement_epic_mapping_enabled_create_epic_and_push_findings(self):
         eng = self.get_engagement(3)

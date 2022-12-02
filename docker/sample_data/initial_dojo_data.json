@@ -359,7 +359,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/login.jsp"
     },
@@ -383,7 +383,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/register.jsp"
     },
@@ -395,7 +395,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/password.jsp"
     },
@@ -407,7 +407,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/"
     },
@@ -419,7 +419,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/basket.jsp"
     },
@@ -431,7 +431,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/advanced.jsp"
     },
@@ -443,7 +443,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/admin.jsp"
     },
@@ -455,7 +455,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/about.jsp"
     },
@@ -467,7 +467,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/contact.jsp"
     },
@@ -479,7 +479,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/home.jsp"
     },
@@ -491,7 +491,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/product.jsp"
     },
@@ -503,7 +503,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/score.jsp"
     },
@@ -515,7 +515,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/search.jsp"
     },
@@ -527,7 +527,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/"
     },
@@ -539,7 +539,7 @@
       "product": 1,
       "protocol": "http",
       "fragment": null,
-      "host": "localhost:8888",
+      "host": "10.3.2.1:4242",
       "query": null,
       "path": "/bodgeit/logout.jsp"
     },
@@ -1118,7 +1118,7 @@
       "title": "Password field with autocomplete enabled",
       "url": "",
       "object_id": "1",
-      "content": "Password field with autocomplete enabled No url given Low Most browsers have a facility to remember user credentials that are entered\r\ninto HTML forms. This function can be configured by the user and also by\r\napplications that employ user credentials. If the function is enabled, then\r\ncredentials entered by the user are stored on their local computer and\r\nretrieved by the browser on future visits to the same application.\r\n\r\nThe stored credentials can be captured by an attacker who gains control over\r\nthe user's computer. Further, an attacker who finds a separate application\r\nvulnerability such as cross-site scripting may be able to exploit this to\r\nretrieve a user's browser-stored credentials.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL:\r\n\r\n  * http://localhost:8888/bodgeit/login.jsp\r\n\r\nThe form contains the following password field with autocomplete enabled:\r\n\r\n  * password\r\n\r\n To prevent browsers from storing credentials entered into HTML forms, include\r\nthe attribute **autocomplete=\"off\"** within the FORM tag (to protect all form\r\nfields) or within the relevant INPUT tags (to protect specific individual\r\nfields).\r\n\r\nPlease note that modern web browsers may ignore this directive. In spite of\r\nthis there is a chance that not disabling autocomplete may cause problems\r\nobtaining PCI compliance.\r\n\r\n No impact provided No references given S3",
+      "content": "Password field with autocomplete enabled No url given Low Most browsers have a facility to remember user credentials that are entered\r\ninto HTML forms. This function can be configured by the user and also by\r\napplications that employ user credentials. If the function is enabled, then\r\ncredentials entered by the user are stored on their local computer and\r\nretrieved by the browser on future visits to the same application.\r\n\r\nThe stored credentials can be captured by an attacker who gains control over\r\nthe user's computer. Further, an attacker who finds a separate application\r\nvulnerability such as cross-site scripting may be able to exploit this to\r\nretrieve a user's browser-stored credentials.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL:\r\n\r\n  * http://10.3.2.1:4242/bodgeit/login.jsp\r\n\r\nThe form contains the following password field with autocomplete enabled:\r\n\r\n  * password\r\n\r\n To prevent browsers from storing credentials entered into HTML forms, include\r\nthe attribute **autocomplete=\"off\"** within the FORM tag (to protect all form\r\nfields) or within the relevant INPUT tags (to protect specific individual\r\nfields).\r\n\r\nPlease note that modern web browsers may ignore this directive. In spite of\r\nthis there is a chance that not disabling autocomplete may cause problems\r\nobtaining PCI compliance.\r\n\r\n No impact provided No references given S3",
       "content_type": 28,
       "object_id_int": 1
     },
@@ -1253,7 +1253,7 @@
       "title": "Cleartext submission of password",
       "url": "",
       "object_id": "10",
-      "content": "Cleartext submission of password No url given High Some applications transmit passwords over unencrypted connections, making them\r\nvulnerable to interception. To exploit this vulnerability, an attacker must be\r\nsuitably positioned to eavesdrop on the victim's network traffic. This\r\nscenario typically occurs when a client communicates with the server over an\r\ninsecure connection such as public Wi-Fi, or a corporate or home network that\r\nis shared with a compromised computer. Common defenses such as switched\r\nnetworks are not sufficient to prevent this. An attacker situated in the\r\nuser's ISP or the application's hosting infrastructure could also perform this\r\nattack. Note that an advanced adversary could potentially target any\r\nconnection made over the Internet's core infrastructure.\r\n\r\nVulnerabilities that result in the disclosure of users' passwords can result\r\nin compromises that are extremely difficult to investigate due to obscured\r\naudit trails. Even if the application itself only handles non-sensitive\r\ninformation, exposing passwords puts users who have re-used their password\r\nelsewhere at risk.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL, which is submitted\r\nover clear-text HTTP:\r\n\r\n  * http://localhost:8888/bodgeit/login.jsp\r\n\r\nThe form contains the following password field:\r\n\r\n  * password\r\n\r\n Applications should use transport-level encryption (SSL or TLS) to protect all\r\nsensitive communications passing between the client and the server.\r\nCommunications that should be protected include the login mechanism and\r\nrelated functionality, and any functions where sensitive data can be accessed\r\nor privileged actions can be performed. These areas should employ their own\r\nsession handling mechanism, and the session tokens used should never be\r\ntransmitted over unencrypted communications. If HTTP cookies are used for\r\ntransmitting session tokens, then the secure flag should be set to prevent\r\ntransmission over clear-text HTTP.\r\n\r\n No impact provided No references given S1",
+      "content": "Cleartext submission of password No url given High Some applications transmit passwords over unencrypted connections, making them\r\nvulnerable to interception. To exploit this vulnerability, an attacker must be\r\nsuitably positioned to eavesdrop on the victim's network traffic. This\r\nscenario typically occurs when a client communicates with the server over an\r\ninsecure connection such as public Wi-Fi, or a corporate or home network that\r\nis shared with a compromised computer. Common defenses such as switched\r\nnetworks are not sufficient to prevent this. An attacker situated in the\r\nuser's ISP or the application's hosting infrastructure could also perform this\r\nattack. Note that an advanced adversary could potentially target any\r\nconnection made over the Internet's core infrastructure.\r\n\r\nVulnerabilities that result in the disclosure of users' passwords can result\r\nin compromises that are extremely difficult to investigate due to obscured\r\naudit trails. Even if the application itself only handles non-sensitive\r\ninformation, exposing passwords puts users who have re-used their password\r\nelsewhere at risk.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL, which is submitted\r\nover clear-text HTTP:\r\n\r\n  * http://10.3.2.1:4242/bodgeit/login.jsp\r\n\r\nThe form contains the following password field:\r\n\r\n  * password\r\n\r\n Applications should use transport-level encryption (SSL or TLS) to protect all\r\nsensitive communications passing between the client and the server.\r\nCommunications that should be protected include the login mechanism and\r\nrelated functionality, and any functions where sensitive data can be accessed\r\nor privileged actions can be performed. These areas should employ their own\r\nsession handling mechanism, and the session tokens used should never be\r\ntransmitted over unencrypted communications. If HTTP cookies are used for\r\ntransmitting session tokens, then the secure flag should be set to prevent\r\ntransmission over clear-text HTTP.\r\n\r\n No impact provided No references given S1",
       "content_type": 28,
       "object_id_int": 10
     },
@@ -2549,7 +2549,7 @@
       "actor": null,
       "content_type": 28,
       "action": 0,
-      "changes": "{\"impact\": [\"None\", \"No impact provided\"], \"false_p\": [\"None\", \"False\"], \"verified\": [\"None\", \"False\"], \"description\": [\"None\", \"Most browsers have a facility to remember user credentials that are entered\\ninto HTML forms. This function can be configured by the user and also by\\napplications that employ user credentials. If the function is enabled, then\\ncredentials entered by the user are stored on their local computer and\\nretrieved by the browser on future visits to the same application.\\n\\nThe stored credentials can be captured by an attacker who gains control over\\nthe user's computer. Further, an attacker who finds a separate application\\nvulnerability such as cross-site scripting may be able to exploit this to\\nretrieve a user's browser-stored credentials.\\n\\n\\n\\nThe page contains a form with the following action URL:\\n\\n  * http://localhost:8888/bodgeit/login.jsp\\n\\nThe form contains the following password field with autocomplete enabled:\\n\\n  * password\\n\\n\"], \"title\": [\"None\", \"Password field with autocomplete enabled\"], \"thread_id\": [\"None\", \"0\"], \"id\": [\"None\", \"1\"], \"reporter\": [\"None\", \"admin\"], \"duplicate\": [\"None\", \"False\"], \"last_reviewed\": [\"None\", \"2016-08-26 21:21:27.523491-05:00\"], \"test\": [\"None\", \"Burp Scan (Aug 26, 2016)\"], \"is_template\": [\"None\", \"False\"], \"mitigation\": [\"None\", \"To prevent browsers from storing credentials entered into HTML forms, include\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\nfields) or within the relevant INPUT tags (to protect specific individual\\nfields).\\n\\nPlease note that modern web browsers may ignore this directive. In spite of\\nthis there is a chance that not disabling autocomplete may cause problems\\nobtaining PCI compliance.\\n\\n\"], \"references\": [\"None\", \"\"], \"numerical_severity\": [\"None\", \"S3\"], \"date\": [\"None\", \"2016-08-26 00:00:00-05:00\"], \"out_of_scope\": [\"None\", \"False\"], \"last_reviewed_by\": [\"None\", \"admin\"], \"cwe\": [\"None\", \"0\"], \"active\": [\"None\", \"True\"], \"severity\": [\"None\", \"Low\"]}",
+      "changes": "{\"impact\": [\"None\", \"No impact provided\"], \"false_p\": [\"None\", \"False\"], \"verified\": [\"None\", \"False\"], \"description\": [\"None\", \"Most browsers have a facility to remember user credentials that are entered\\ninto HTML forms. This function can be configured by the user and also by\\napplications that employ user credentials. If the function is enabled, then\\ncredentials entered by the user are stored on their local computer and\\nretrieved by the browser on future visits to the same application.\\n\\nThe stored credentials can be captured by an attacker who gains control over\\nthe user's computer. Further, an attacker who finds a separate application\\nvulnerability such as cross-site scripting may be able to exploit this to\\nretrieve a user's browser-stored credentials.\\n\\n\\n\\nThe page contains a form with the following action URL:\\n\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\n\\nThe form contains the following password field with autocomplete enabled:\\n\\n  * password\\n\\n\"], \"title\": [\"None\", \"Password field with autocomplete enabled\"], \"thread_id\": [\"None\", \"0\"], \"id\": [\"None\", \"1\"], \"reporter\": [\"None\", \"admin\"], \"duplicate\": [\"None\", \"False\"], \"last_reviewed\": [\"None\", \"2016-08-26 21:21:27.523491-05:00\"], \"test\": [\"None\", \"Burp Scan (Aug 26, 2016)\"], \"is_template\": [\"None\", \"False\"], \"mitigation\": [\"None\", \"To prevent browsers from storing credentials entered into HTML forms, include\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\nfields) or within the relevant INPUT tags (to protect specific individual\\nfields).\\n\\nPlease note that modern web browsers may ignore this directive. In spite of\\nthis there is a chance that not disabling autocomplete may cause problems\\nobtaining PCI compliance.\\n\\n\"], \"references\": [\"None\", \"\"], \"numerical_severity\": [\"None\", \"S3\"], \"date\": [\"None\", \"2016-08-26 00:00:00-05:00\"], \"out_of_scope\": [\"None\", \"False\"], \"last_reviewed_by\": [\"None\", \"admin\"], \"cwe\": [\"None\", \"0\"], \"active\": [\"None\", \"True\"], \"severity\": [\"None\", \"Low\"]}",
       "object_repr": "Password field with autocomplete enabled"
     },
     "model": "auditlog.logentry",
@@ -2565,8 +2565,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/login.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"1\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/login.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/login.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"1\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/login.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 6
@@ -2597,8 +2597,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/register.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"3\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/register.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/register.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"3\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/register.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 8
@@ -2613,8 +2613,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/password.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"4\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/password.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/password.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"4\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/password.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 9
@@ -2645,8 +2645,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"5\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"5\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/"
     },
     "model": "auditlog.logentry",
     "pk": 11
@@ -2661,8 +2661,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/basket.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"6\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/basket.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/basket.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"6\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/basket.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 12
@@ -2677,8 +2677,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/advanced.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"7\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/advanced.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/advanced.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"7\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/advanced.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 13
@@ -2693,8 +2693,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/admin.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"8\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/admin.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/admin.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"8\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/admin.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 14
@@ -2709,8 +2709,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/about.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"9\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/about.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/about.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"9\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/about.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 15
@@ -2725,8 +2725,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/contact.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"10\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/contact.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/contact.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"10\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/contact.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 16
@@ -2741,8 +2741,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/home.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"11\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/home.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/home.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"11\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/home.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 17
@@ -2757,8 +2757,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/product.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"12\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/product.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/product.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"12\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/product.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 18
@@ -2773,8 +2773,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/score.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"13\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/score.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/score.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"13\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/score.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 19
@@ -2789,8 +2789,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/search.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"14\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/search.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/search.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"14\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/search.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 20
@@ -2805,8 +2805,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"15\"]}",
-      "object_repr": "http://localhost:8888/"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"15\"]}",
+      "object_repr": "http://10.3.2.1:4242/"
     },
     "model": "auditlog.logentry",
     "pk": 21
@@ -2821,8 +2821,8 @@
       "actor": null,
       "content_type": 23,
       "action": 0,
-      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/logout.jsp\"], \"host\": [\"None\", \"localhost:8888\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"16\"]}",
-      "object_repr": "http://localhost:8888/bodgeit/logout.jsp"
+      "changes": "{\"product\": [\"None\", \"Bodgeit\"], \"path\": [\"None\", \"/bodgeit/logout.jsp\"], \"host\": [\"None\", \"10.3.2.1:4242\"], \"protocol\": [\"None\", \"http\"], \"id\": [\"None\", \"16\"]}",
+      "object_repr": "http://10.3.2.1:4242/bodgeit/logout.jsp"
     },
     "model": "auditlog.logentry",
     "pk": 22
@@ -2949,7 +2949,7 @@
       "actor": null,
       "content_type": 28,
       "action": 0,
-      "changes": "{\"impact\": [\"None\", \"No impact provided\"], \"false_p\": [\"None\", \"False\"], \"verified\": [\"None\", \"False\"], \"description\": [\"None\", \"Some applications transmit passwords over unencrypted connections, making them\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\nscenario typically occurs when a client communicates with the server over an\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\nis shared with a compromised computer. Common defenses such as switched\\nnetworks are not sufficient to prevent this. An attacker situated in the\\nuser's ISP or the application's hosting infrastructure could also perform this\\nattack. Note that an advanced adversary could potentially target any\\nconnection made over the Internet's core infrastructure.\\n\\nVulnerabilities that result in the disclosure of users' passwords can result\\nin compromises that are extremely difficult to investigate due to obscured\\naudit trails. Even if the application itself only handles non-sensitive\\ninformation, exposing passwords puts users who have re-used their password\\nelsewhere at risk.\\n\\n\\n\\nThe page contains a form with the following action URL, which is submitted\\nover clear-text HTTP:\\n\\n  * http://localhost:8888/bodgeit/login.jsp\\n\\nThe form contains the following password field:\\n\\n  * password\\n\\n\"], \"title\": [\"None\", \"Cleartext submission of password\"], \"thread_id\": [\"None\", \"0\"], \"id\": [\"None\", \"10\"], \"reporter\": [\"None\", \"admin\"], \"duplicate\": [\"None\", \"False\"], \"last_reviewed\": [\"None\", \"2016-08-26 21:21:27.922449-05:00\"], \"test\": [\"None\", \"Burp Scan (Aug 26, 2016)\"], \"is_template\": [\"None\", \"False\"], \"mitigation\": [\"None\", \"Applications should use transport-level encryption (SSL or TLS) to protect all\\nsensitive communications passing between the client and the server.\\nCommunications that should be protected include the login mechanism and\\nrelated functionality, and any functions where sensitive data can be accessed\\nor privileged actions can be performed. These areas should employ their own\\nsession handling mechanism, and the session tokens used should never be\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\ntransmitting session tokens, then the secure flag should be set to prevent\\ntransmission over clear-text HTTP.\\n\\n\"], \"references\": [\"None\", \"\"], \"numerical_severity\": [\"None\", \"S1\"], \"date\": [\"None\", \"2016-08-26 00:00:00-05:00\"], \"out_of_scope\": [\"None\", \"False\"], \"last_reviewed_by\": [\"None\", \"admin\"], \"cwe\": [\"None\", \"0\"], \"active\": [\"None\", \"True\"], \"severity\": [\"None\", \"High\"]}",
+      "changes": "{\"impact\": [\"None\", \"No impact provided\"], \"false_p\": [\"None\", \"False\"], \"verified\": [\"None\", \"False\"], \"description\": [\"None\", \"Some applications transmit passwords over unencrypted connections, making them\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\nscenario typically occurs when a client communicates with the server over an\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\nis shared with a compromised computer. Common defenses such as switched\\nnetworks are not sufficient to prevent this. An attacker situated in the\\nuser's ISP or the application's hosting infrastructure could also perform this\\nattack. Note that an advanced adversary could potentially target any\\nconnection made over the Internet's core infrastructure.\\n\\nVulnerabilities that result in the disclosure of users' passwords can result\\nin compromises that are extremely difficult to investigate due to obscured\\naudit trails. Even if the application itself only handles non-sensitive\\ninformation, exposing passwords puts users who have re-used their password\\nelsewhere at risk.\\n\\n\\n\\nThe page contains a form with the following action URL, which is submitted\\nover clear-text HTTP:\\n\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\n\\nThe form contains the following password field:\\n\\n  * password\\n\\n\"], \"title\": [\"None\", \"Cleartext submission of password\"], \"thread_id\": [\"None\", \"0\"], \"id\": [\"None\", \"10\"], \"reporter\": [\"None\", \"admin\"], \"duplicate\": [\"None\", \"False\"], \"last_reviewed\": [\"None\", \"2016-08-26 21:21:27.922449-05:00\"], \"test\": [\"None\", \"Burp Scan (Aug 26, 2016)\"], \"is_template\": [\"None\", \"False\"], \"mitigation\": [\"None\", \"Applications should use transport-level encryption (SSL or TLS) to protect all\\nsensitive communications passing between the client and the server.\\nCommunications that should be protected include the login mechanism and\\nrelated functionality, and any functions where sensitive data can be accessed\\nor privileged actions can be performed. These areas should employ their own\\nsession handling mechanism, and the session tokens used should never be\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\ntransmitting session tokens, then the secure flag should be set to prevent\\ntransmission over clear-text HTTP.\\n\\n\"], \"references\": [\"None\", \"\"], \"numerical_severity\": [\"None\", \"S1\"], \"date\": [\"None\", \"2016-08-26 00:00:00-05:00\"], \"out_of_scope\": [\"None\", \"False\"], \"last_reviewed_by\": [\"None\", \"admin\"], \"cwe\": [\"None\", \"0\"], \"active\": [\"None\", \"True\"], \"severity\": [\"None\", \"High\"]}",
       "object_repr": "Cleartext submission of password"
     },
     "model": "auditlog.logentry",
@@ -2965,7 +2965,7 @@
       "actor": null,
       "content_type": 28,
       "action": 1,
-      "changes": "{\"verified\": [\"False\", \"True\"], \"description\": [\"Some applications transmit passwords over unencrypted connections, making them\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\nscenario typically occurs when a client communicates with the server over an\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\nis shared with a compromised computer. Common defenses such as switched\\nnetworks are not sufficient to prevent this. An attacker situated in the\\nuser's ISP or the application's hosting infrastructure could also perform this\\nattack. Note that an advanced adversary could potentially target any\\nconnection made over the Internet's core infrastructure.\\n\\nVulnerabilities that result in the disclosure of users' passwords can result\\nin compromises that are extremely difficult to investigate due to obscured\\naudit trails. Even if the application itself only handles non-sensitive\\ninformation, exposing passwords puts users who have re-used their password\\nelsewhere at risk.\\n\\n\\n\\nThe page contains a form with the following action URL, which is submitted\\nover clear-text HTTP:\\n\\n  * http://localhost:8888/bodgeit/login.jsp\\n\\nThe form contains the following password field:\\n\\n  * password\\n\\n\", \"Some applications transmit passwords over unencrypted connections, making them\\r\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\r\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\r\\nscenario typically occurs when a client communicates with the server over an\\r\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\r\\nis shared with a compromised computer. Common defenses such as switched\\r\\nnetworks are not sufficient to prevent this. An attacker situated in the\\r\\nuser's ISP or the application's hosting infrastructure could also perform this\\r\\nattack. Note that an advanced adversary could potentially target any\\r\\nconnection made over the Internet's core infrastructure.\\r\\n\\r\\nVulnerabilities that result in the disclosure of users' passwords can result\\r\\nin compromises that are extremely difficult to investigate due to obscured\\r\\naudit trails. Even if the application itself only handles non-sensitive\\r\\ninformation, exposing passwords puts users who have re-used their password\\r\\nelsewhere at risk.\\r\\n\\r\\n\\r\\n\\r\\nThe page contains a form with the following action URL, which is submitted\\r\\nover clear-text HTTP:\\r\\n\\r\\n  * http://localhost:8888/bodgeit/login.jsp\\r\\n\\r\\nThe form contains the following password field:\\r\\n\\r\\n  * password\\r\\n\\r\\n\"], \"url\": [\"None\", \"No url given\"], \"mitigation\": [\"Applications should use transport-level encryption (SSL or TLS) to protect all\\nsensitive communications passing between the client and the server.\\nCommunications that should be protected include the login mechanism and\\nrelated functionality, and any functions where sensitive data can be accessed\\nor privileged actions can be performed. These areas should employ their own\\nsession handling mechanism, and the session tokens used should never be\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\ntransmitting session tokens, then the secure flag should be set to prevent\\ntransmission over clear-text HTTP.\\n\\n\", \"Applications should use transport-level encryption (SSL or TLS) to protect all\\r\\nsensitive communications passing between the client and the server.\\r\\nCommunications that should be protected include the login mechanism and\\r\\nrelated functionality, and any functions where sensitive data can be accessed\\r\\nor privileged actions can be performed. These areas should employ their own\\r\\nsession handling mechanism, and the session tokens used should never be\\r\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\r\\ntransmitting session tokens, then the secure flag should be set to prevent\\r\\ntransmission over clear-text HTTP.\\r\\n\\r\\n\"], \"references\": [\"\", \"No references given\"], \"last_reviewed\": [\"2016-08-27 02:21:27.922449+00:00\", \"2016-08-26 21:21:53.556891-05:00\"]}",
+      "changes": "{\"verified\": [\"False\", \"True\"], \"description\": [\"Some applications transmit passwords over unencrypted connections, making them\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\nscenario typically occurs when a client communicates with the server over an\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\nis shared with a compromised computer. Common defenses such as switched\\nnetworks are not sufficient to prevent this. An attacker situated in the\\nuser's ISP or the application's hosting infrastructure could also perform this\\nattack. Note that an advanced adversary could potentially target any\\nconnection made over the Internet's core infrastructure.\\n\\nVulnerabilities that result in the disclosure of users' passwords can result\\nin compromises that are extremely difficult to investigate due to obscured\\naudit trails. Even if the application itself only handles non-sensitive\\ninformation, exposing passwords puts users who have re-used their password\\nelsewhere at risk.\\n\\n\\n\\nThe page contains a form with the following action URL, which is submitted\\nover clear-text HTTP:\\n\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\n\\nThe form contains the following password field:\\n\\n  * password\\n\\n\", \"Some applications transmit passwords over unencrypted connections, making them\\r\\nvulnerable to interception. To exploit this vulnerability, an attacker must be\\r\\nsuitably positioned to eavesdrop on the victim's network traffic. This\\r\\nscenario typically occurs when a client communicates with the server over an\\r\\ninsecure connection such as public Wi-Fi, or a corporate or home network that\\r\\nis shared with a compromised computer. Common defenses such as switched\\r\\nnetworks are not sufficient to prevent this. An attacker situated in the\\r\\nuser's ISP or the application's hosting infrastructure could also perform this\\r\\nattack. Note that an advanced adversary could potentially target any\\r\\nconnection made over the Internet's core infrastructure.\\r\\n\\r\\nVulnerabilities that result in the disclosure of users' passwords can result\\r\\nin compromises that are extremely difficult to investigate due to obscured\\r\\naudit trails. Even if the application itself only handles non-sensitive\\r\\ninformation, exposing passwords puts users who have re-used their password\\r\\nelsewhere at risk.\\r\\n\\r\\n\\r\\n\\r\\nThe page contains a form with the following action URL, which is submitted\\r\\nover clear-text HTTP:\\r\\n\\r\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\r\\n\\r\\nThe form contains the following password field:\\r\\n\\r\\n  * password\\r\\n\\r\\n\"], \"url\": [\"None\", \"No url given\"], \"mitigation\": [\"Applications should use transport-level encryption (SSL or TLS) to protect all\\nsensitive communications passing between the client and the server.\\nCommunications that should be protected include the login mechanism and\\nrelated functionality, and any functions where sensitive data can be accessed\\nor privileged actions can be performed. These areas should employ their own\\nsession handling mechanism, and the session tokens used should never be\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\ntransmitting session tokens, then the secure flag should be set to prevent\\ntransmission over clear-text HTTP.\\n\\n\", \"Applications should use transport-level encryption (SSL or TLS) to protect all\\r\\nsensitive communications passing between the client and the server.\\r\\nCommunications that should be protected include the login mechanism and\\r\\nrelated functionality, and any functions where sensitive data can be accessed\\r\\nor privileged actions can be performed. These areas should employ their own\\r\\nsession handling mechanism, and the session tokens used should never be\\r\\ntransmitted over unencrypted communications. If HTTP cookies are used for\\r\\ntransmitting session tokens, then the secure flag should be set to prevent\\r\\ntransmission over clear-text HTTP.\\r\\n\\r\\n\"], \"references\": [\"\", \"No references given\"], \"last_reviewed\": [\"2016-08-27 02:21:27.922449+00:00\", \"2016-08-26 21:21:53.556891-05:00\"]}",
       "object_repr": "Cleartext submission of password"
     },
     "model": "auditlog.logentry",
@@ -3029,7 +3029,7 @@
       "actor": null,
       "content_type": 28,
       "action": 1,
-      "changes": "{\"verified\": [\"False\", \"True\"], \"description\": [\"Most browsers have a facility to remember user credentials that are entered\\ninto HTML forms. This function can be configured by the user and also by\\napplications that employ user credentials. If the function is enabled, then\\ncredentials entered by the user are stored on their local computer and\\nretrieved by the browser on future visits to the same application.\\n\\nThe stored credentials can be captured by an attacker who gains control over\\nthe user's computer. Further, an attacker who finds a separate application\\nvulnerability such as cross-site scripting may be able to exploit this to\\nretrieve a user's browser-stored credentials.\\n\\n\\n\\nThe page contains a form with the following action URL:\\n\\n  * http://localhost:8888/bodgeit/login.jsp\\n\\nThe form contains the following password field with autocomplete enabled:\\n\\n  * password\\n\\n\", \"Most browsers have a facility to remember user credentials that are entered\\r\\ninto HTML forms. This function can be configured by the user and also by\\r\\napplications that employ user credentials. If the function is enabled, then\\r\\ncredentials entered by the user are stored on their local computer and\\r\\nretrieved by the browser on future visits to the same application.\\r\\n\\r\\nThe stored credentials can be captured by an attacker who gains control over\\r\\nthe user's computer. Further, an attacker who finds a separate application\\r\\nvulnerability such as cross-site scripting may be able to exploit this to\\r\\nretrieve a user's browser-stored credentials.\\r\\n\\r\\n\\r\\n\\r\\nThe page contains a form with the following action URL:\\r\\n\\r\\n  * http://localhost:8888/bodgeit/login.jsp\\r\\n\\r\\nThe form contains the following password field with autocomplete enabled:\\r\\n\\r\\n  * password\\r\\n\\r\\n\"], \"url\": [\"None\", \"No url given\"], \"mitigation\": [\"To prevent browsers from storing credentials entered into HTML forms, include\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\nfields) or within the relevant INPUT tags (to protect specific individual\\nfields).\\n\\nPlease note that modern web browsers may ignore this directive. In spite of\\nthis there is a chance that not disabling autocomplete may cause problems\\nobtaining PCI compliance.\\n\\n\", \"To prevent browsers from storing credentials entered into HTML forms, include\\r\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\r\\nfields) or within the relevant INPUT tags (to protect specific individual\\r\\nfields).\\r\\n\\r\\nPlease note that modern web browsers may ignore this directive. In spite of\\r\\nthis there is a chance that not disabling autocomplete may cause problems\\r\\nobtaining PCI compliance.\\r\\n\\r\\n\"], \"references\": [\"\", \"No references given\"], \"last_reviewed\": [\"2016-08-27 02:21:27.523491+00:00\", \"2016-08-26 21:23:45.331394-05:00\"]}",
+      "changes": "{\"verified\": [\"False\", \"True\"], \"description\": [\"Most browsers have a facility to remember user credentials that are entered\\ninto HTML forms. This function can be configured by the user and also by\\napplications that employ user credentials. If the function is enabled, then\\ncredentials entered by the user are stored on their local computer and\\nretrieved by the browser on future visits to the same application.\\n\\nThe stored credentials can be captured by an attacker who gains control over\\nthe user's computer. Further, an attacker who finds a separate application\\nvulnerability such as cross-site scripting may be able to exploit this to\\nretrieve a user's browser-stored credentials.\\n\\n\\n\\nThe page contains a form with the following action URL:\\n\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\n\\nThe form contains the following password field with autocomplete enabled:\\n\\n  * password\\n\\n\", \"Most browsers have a facility to remember user credentials that are entered\\r\\ninto HTML forms. This function can be configured by the user and also by\\r\\napplications that employ user credentials. If the function is enabled, then\\r\\ncredentials entered by the user are stored on their local computer and\\r\\nretrieved by the browser on future visits to the same application.\\r\\n\\r\\nThe stored credentials can be captured by an attacker who gains control over\\r\\nthe user's computer. Further, an attacker who finds a separate application\\r\\nvulnerability such as cross-site scripting may be able to exploit this to\\r\\nretrieve a user's browser-stored credentials.\\r\\n\\r\\n\\r\\n\\r\\nThe page contains a form with the following action URL:\\r\\n\\r\\n  * http://10.3.2.1:4242/bodgeit/login.jsp\\r\\n\\r\\nThe form contains the following password field with autocomplete enabled:\\r\\n\\r\\n  * password\\r\\n\\r\\n\"], \"url\": [\"None\", \"No url given\"], \"mitigation\": [\"To prevent browsers from storing credentials entered into HTML forms, include\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\nfields) or within the relevant INPUT tags (to protect specific individual\\nfields).\\n\\nPlease note that modern web browsers may ignore this directive. In spite of\\nthis there is a chance that not disabling autocomplete may cause problems\\nobtaining PCI compliance.\\n\\n\", \"To prevent browsers from storing credentials entered into HTML forms, include\\r\\nthe attribute **autocomplete=\\\"off\\\"** within the FORM tag (to protect all form\\r\\nfields) or within the relevant INPUT tags (to protect specific individual\\r\\nfields).\\r\\n\\r\\nPlease note that modern web browsers may ignore this directive. In spite of\\r\\nthis there is a chance that not disabling autocomplete may cause problems\\r\\nobtaining PCI compliance.\\r\\n\\r\\n\"], \"references\": [\"\", \"No references given\"], \"last_reviewed\": [\"2016-08-27 02:21:27.523491+00:00\", \"2016-08-26 21:23:45.331394-05:00\"]}",
       "object_repr": "Password field with autocomplete enabled"
     },
     "model": "auditlog.logentry",
@@ -3362,7 +3362,7 @@
       "test": 1,
       "out_of_scope": false,
       "cwe": 0,
-      "description": "Most browsers have a facility to remember user credentials that are entered\r\ninto HTML forms. This function can be configured by the user and also by\r\napplications that employ user credentials. If the function is enabled, then\r\ncredentials entered by the user are stored on their local computer and\r\nretrieved by the browser on future visits to the same application.\r\n\r\nThe stored credentials can be captured by an attacker who gains control over\r\nthe user's computer. Further, an attacker who finds a separate application\r\nvulnerability such as cross-site scripting may be able to exploit this to\r\nretrieve a user's browser-stored credentials.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL:\r\n\r\n  * http://localhost:8888/bodgeit/login.jsp\r\n\r\nThe form contains the following password field with autocomplete enabled:\r\n\r\n  * password\r\n\r\n",
+      "description": "Most browsers have a facility to remember user credentials that are entered\r\ninto HTML forms. This function can be configured by the user and also by\r\napplications that employ user credentials. If the function is enabled, then\r\ncredentials entered by the user are stored on their local computer and\r\nretrieved by the browser on future visits to the same application.\r\n\r\nThe stored credentials can be captured by an attacker who gains control over\r\nthe user's computer. Further, an attacker who finds a separate application\r\nvulnerability such as cross-site scripting may be able to exploit this to\r\nretrieve a user's browser-stored credentials.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL:\r\n\r\n  * http://10.3.2.1:4242/bodgeit/login.jsp\r\n\r\nThe form contains the following password field with autocomplete enabled:\r\n\r\n  * password\r\n\r\n",
       "mitigated_by": null,
       "reporter": 1,
       "mitigated": null,
@@ -3717,7 +3717,7 @@
       "test": 1,
       "out_of_scope": false,
       "cwe": 0,
-      "description": "Some applications transmit passwords over unencrypted connections, making them\r\nvulnerable to interception. To exploit this vulnerability, an attacker must be\r\nsuitably positioned to eavesdrop on the victim's network traffic. This\r\nscenario typically occurs when a client communicates with the server over an\r\ninsecure connection such as public Wi-Fi, or a corporate or home network that\r\nis shared with a compromised computer. Common defenses such as switched\r\nnetworks are not sufficient to prevent this. An attacker situated in the\r\nuser's ISP or the application's hosting infrastructure could also perform this\r\nattack. Note that an advanced adversary could potentially target any\r\nconnection made over the Internet's core infrastructure.\r\n\r\nVulnerabilities that result in the disclosure of users' passwords can result\r\nin compromises that are extremely difficult to investigate due to obscured\r\naudit trails. Even if the application itself only handles non-sensitive\r\ninformation, exposing passwords puts users who have re-used their password\r\nelsewhere at risk.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL, which is submitted\r\nover clear-text HTTP:\r\n\r\n  * http://localhost:8888/bodgeit/login.jsp\r\n\r\nThe form contains the following password field:\r\n\r\n  * password\r\n\r\n",
+      "description": "Some applications transmit passwords over unencrypted connections, making them\r\nvulnerable to interception. To exploit this vulnerability, an attacker must be\r\nsuitably positioned to eavesdrop on the victim's network traffic. This\r\nscenario typically occurs when a client communicates with the server over an\r\ninsecure connection such as public Wi-Fi, or a corporate or home network that\r\nis shared with a compromised computer. Common defenses such as switched\r\nnetworks are not sufficient to prevent this. An attacker situated in the\r\nuser's ISP or the application's hosting infrastructure could also perform this\r\nattack. Note that an advanced adversary could potentially target any\r\nconnection made over the Internet's core infrastructure.\r\n\r\nVulnerabilities that result in the disclosure of users' passwords can result\r\nin compromises that are extremely difficult to investigate due to obscured\r\naudit trails. Even if the application itself only handles non-sensitive\r\ninformation, exposing passwords puts users who have re-used their password\r\nelsewhere at risk.\r\n\r\n\r\n\r\nThe page contains a form with the following action URL, which is submitted\r\nover clear-text HTTP:\r\n\r\n  * http://10.3.2.1:4242/bodgeit/login.jsp\r\n\r\nThe form contains the following password field:\r\n\r\n  * password\r\n\r\n",
       "mitigated_by": null,
       "reporter": 1,
       "mitigated": null,

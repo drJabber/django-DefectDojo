@@ -111,7 +111,7 @@ class DojoTestUtilsMixin(object):
     def assert_openproject_issue_count_in_test(self, test_id, count):
         test = self.get_test(test_id)
         openproject_issues = OpenProject_Issue.objects.filter(finding__in=test.finding_set.all())
-        self.assertEqual(count, len(openproject_issues))
+        self.assertEqual(count, len(openproject_issues),)
 
     def assert_openproject_group_issue_count_in_test(self, test_id, count):
         test = self.get_test(test_id)
@@ -687,6 +687,7 @@ class DojoAPITestCase(APITestCase, DojoTestUtilsMixin):
 
     def import_scan(self, payload, expected_http_status_code):
         logger.debug('import_scan payload %s', payload)
+        logger.info('-----------------before post')
         response = self.client.post(reverse('importscan-list'), payload)
         print(response.content)
         self.assertEqual(expected_http_status_code, response.status_code, response.content[:1000])

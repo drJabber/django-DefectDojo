@@ -130,7 +130,10 @@ ENV \
   DD_UWSGI_MODE="socket" \
   DD_UWSGI_ENDPOINT="0.0.0.0:3031" \
   DD_UWSGI_NUM_OF_PROCESSES="2" \
-  DD_UWSGI_NUM_OF_THREADS="2"
+  DD_UWSGI_NUM_OF_THREADS="2" 
+#  HTTP_PROXY="http://192.168.16.201:8888" \
+#  HTTPS_PROXY="http://192.168.16.201:8888" \
+#  NO_PROXY="127.0.0.1,localhost"
 ENTRYPOINT ["/entrypoint-uwsgi.sh"]
 
 FROM django as django-unittests

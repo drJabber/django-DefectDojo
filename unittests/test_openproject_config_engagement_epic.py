@@ -54,7 +54,7 @@ class OpenProjectConfigEngagementEpicTest(DojoVCRTestCase, OpenProjectConfigEnga
             'target_end': '2070-12-04',
             'status': 'Not Started',
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'NTEST',
+            'openproject-project-form-project_key': '2222',
             'openproject-project-form-product_openproject_sla_notification': 'on',
             'openproject-project-form-enable_engagement_epic_mapping': 'on',
             'openproject-epic-form-push_to_openproject': 'on',

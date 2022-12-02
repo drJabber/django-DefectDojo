@@ -9,9 +9,9 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from pyopenproject.openproject import OpenProject
 from pyopenproject.model.work_package import WorkPackage
+from pyopenproject.business.util.filter import Filter
 from pyopenproject.business.exception.business_error import BusinessError
 from pyopenproject.api_connection.exceptions.request_exception import RequestError
-from pyopenproject.business.util.filter import Filter
 from dojo.models import Finding, Finding_Group, Risk_Acceptance, Stub_Finding, Test, Engagement, Product, \
     OpenProject_Issue, OpenProject_Project, System_Settings, Notes, OpenProject_Instance, User
 from dojo.notifications.helper import create_notification
@@ -182,7 +182,7 @@ def get_openproject_project(obj, use_inheritance=True):
         op_projects = product.openproject_project_set.all()  # first() doesn't work with prefetching
         op_project = op_projects[0] if len(op_projects) > 0 else None
         if op_project:
-            logger.debug('found openproject_project %s for %s', op_project, product)
+            logger.debug('found openproject_project %s(%s) for %s', op_project, op_project.project_key, product)
             return op_project
 
     logger.debug('no openproject_project found for %s', obj)
@@ -510,6 +510,7 @@ def push_to_openproject(obj, *args, **kwargs):
     if obj is None:
         raise ValueError('Cannot push None to OpenProject')
 
+    logger.debug(f'------------------------------push_to_openproject: {obj}')
     if isinstance(obj, Finding):
         finding = obj
         if finding.has_openproject_issue:
@@ -663,7 +664,7 @@ def add_openproject_issue(obj, *args, **kwargs):
         return False
     except BusinessError as e:
         logger.exception(e)
-        logger.error("openproject_meta for project: %s and url: %s meta: %s", openproject_project.project_key, openproject_project.openproject_instance.url, json.dumps(wp, indent=4))  # this is None safe
+        logger.error("openproject for project: %s and url: %s", openproject_project.project_key, openproject_project.openproject_instance.url)  # this is None safe
         log_openproject_alert(e.text, obj)
         return False
 
@@ -804,6 +805,21 @@ def get_openproject_issue_from_openproject(find):
         return None
 
 
+def get_op_project_key(op, openproject_project):
+    try:
+        logger.debug(f'get openproject key for name={openproject_project.project_key}')
+        return int(openproject_project.project_key)
+    except ValueError as e:
+        project_svc = op.get_project_service()
+        project_list = project_svc.find_all(filters=[Filter('name','=',[openproject_project.project_key, ])])
+        result = None
+        if project_list:
+            project = project_list[0]
+            if project and "_embedded" in project and "elements" in project["_embedded"] and project["_embedded"]["elements"]:
+                result = project_list[0]["_embedded"]["elements"][0].id
+        logger.debug(f'get openproject key id={result}')
+        return result
+
 def get_op_issue_type_key(op, openproject_project):
     return list(filter(
         lambda t: t.name==openproject_project.openproject_instance.default_issue_type,
@@ -818,30 +834,29 @@ def get_op_issue_priority_key(op, openproject_project, priority):
     else:
         raise BusinessError(f"Bad Openproject priority key: {priority}")
 
-
 # gets the metadata for the default issue type in this openproject project
 def get_openproject_meta(op, openproject_project):
-    op_type = get_op_issue_type_key(op, openproject_project)
-    flt = Filter("id", "=", [f'{openproject_project.project_key}-{op_type}',])
-    meta = op.get_work_package_service().find_all_schemas(
-        [
-            flt
-        ]
-    )
+    meta = None
+    pk = get_op_project_key(op, openproject_project)
+    logger.debug(f'get_openproject_meta: get openproject key name/id={openproject_project.project_key}/{pk}')
+    # openproject_project.project_key = pk
+    if pk is not None:
+        op_type = get_op_issue_type_key(op, openproject_project)
+        meta = op.get_work_package_service().find_all_schemas(filters=[Filter("id", "=", [f'{pk}-{op_type}', ])])
 
     meta_data_error = False
     
     if not meta:
         meta_data_error = True
         message = 'unable to retrieve metadata from OpenProject %s for issuetype %s in project %s. Invalid default issue type configured in Defect Dojo?' % (openproject_project.openproject_instance, openproject_project.openproject_instance.default_issue_type, openproject_project.project_key)
+    else:
+        if not meta[0].project:
+            meta_data_error = True
+            message = 'unable to retrieve metadata from OpenProject %s for project %s. Invalid project key or no permissions to this project?' % (openproject_project.openproject_instance, openproject_project.project_key)
 
-    if not meta[0].project:
-        meta_data_error = True
-        message = 'unable to retrieve metadata from OpenProject %s for project %s. Invalid project key or no permissions to this project?' % (openproject_project.openproject_instance, openproject_project.project_key)
-
-    elif not meta[0].type:
-        meta_data_error = True
-        message = 'unable to retrieve metadata from OpenProject %s for issuetype %s in project %s. Invalid default issue type configured in Defect Dojo?' % (openproject_project.openproject_instance, openproject_project.openproject_instance.default_issue_type, openproject_project.project_key)
+        elif not meta[0].type:
+            meta_data_error = True
+            message = 'unable to retrieve metadata from OpenProject %s for issuetype %s in project %s. Invalid default issue type configured in Defect Dojo?' % (openproject_project.openproject_instance, openproject_project.openproject_instance.default_issue_type, openproject_project.project_key)
 
     if meta_data_error:
         logger.warn(message)
@@ -849,7 +864,7 @@ def get_openproject_meta(op, openproject_project):
 
         add_error_message_to_response(message)
 
-        raise BusinessError(text=message)
+        raise BusinessError(message)
     else:
         return meta
 
@@ -1007,6 +1022,8 @@ def add_epic(engagement, **kwargs):
 
     if not is_openproject_configured_and_enabled(engagement):
         return False
+
+    logger.debug('config found')
 
     openproject_instance = get_openproject_instance(engagement)
     openproject_project = get_openproject_project(engagement)
@@ -1180,7 +1197,6 @@ def process_openproject_project_form(request, instance=None, target=None, produc
                         logger.debug('unable to retrieve openproject project from openproject instance, invalid?!')
                         error = True
                     else:
-                        logger.debug(vars(openproject_project))
                         openproject_project.save()
                         # update the in memory instance to make openproject_project attribute work and it can be retrieved when pushing
                         # an epic in the next step

@@ -23,7 +23,7 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'IUNSEC',
+            'openproject-project-form-project_key': '3333',
             'openproject-project-form-product_openproject_sla_notification': 'on',
         }
 
@@ -38,7 +38,7 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'IUNSEC',
+            'openproject-project-form-project_key': '3333',
             'openproject-project-form-product_openproject_sla_notification': 'on',
             'openproject-project-form-enable_engagement_epic_mapping': 'on',
             'openproject-epic-form-push_to_openproject': 'on',
@@ -72,7 +72,7 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'ISEC',
+            'openproject-project-form-project_key': '4444',
             'openproject-project-form-product_openproject_sla_notification': 'on',
         }
 
@@ -87,7 +87,7 @@ class OpenProjectConfigEngagementBase(object):
             'status': 'Not Started',
             # 'openproject-project-form-inherit_from_product': 'on', # absence = False in html forms
             'openproject-project-form-openproject_instance': 2,
-            'openproject-project-form-project_key': 'ISEC2',
+            'openproject-project-form-project_key': '4445',
             'openproject-project-form-product_openproject_sla_notification': 'on',
         }
 
